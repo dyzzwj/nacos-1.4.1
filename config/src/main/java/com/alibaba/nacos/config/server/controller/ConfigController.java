@@ -89,21 +89,21 @@ import java.util.stream.Collectors;
 @RestController
 @RequestMapping(Constants.CONFIG_CONTROLLER_PATH)
 public class ConfigController {
-    
+
     private static final Logger LOGGER = LoggerFactory.getLogger(ConfigController.class);
-    
+
     private static final String EXPORT_CONFIG_FILE_NAME = "nacos_config_export_";
-    
+
     private static final String EXPORT_CONFIG_FILE_NAME_EXT = ".zip";
-    
+
     private static final String EXPORT_CONFIG_FILE_NAME_DATE_FORMAT = "yyyyMMddHHmmss";
-    
+
     private final ConfigServletInner inner;
-    
+
     private final PersistService persistService;
-    
+
     private final ConfigSubService configSubService;
-    
+
     @Autowired
     public ConfigController(ConfigServletInner configServletInner, PersistService persistService,
             ConfigSubService configSubService) {
@@ -111,9 +111,15 @@ public class ConfigController {
         this.persistService = persistService;
         this.configSubService = configSubService;
     }
-    
+
     /**
      * Adds or updates non-aggregated data.
+     *   发布配置
+     *   基于非集群derby启动的流程如下
+         * 1、 更新数据库
+         * 2、集群中所有服务端更新本地配置
+         * 3、响应客户端长轮询
+     *
      *
      * @throws NacosException NacosException.
      */
@@ -131,7 +137,7 @@ public class ConfigController {
             @RequestParam(value = "effect", required = false) String effect,
             @RequestParam(value = "type", required = false) String type,
             @RequestParam(value = "schema", required = false) String schema) throws NacosException {
-        
+
         final String srcIp = RequestUtil.getRemoteIp(request);
         final String requestIpApp = RequestUtil.getAppName(request);
         srcUser = RequestUtil.getSrcUserName(request);
@@ -151,20 +157,27 @@ public class ConfigController {
         MapUtils.putIfValNoNull(configAdvanceInfo, "type", type);
         MapUtils.putIfValNoNull(configAdvanceInfo, "schema", schema);
         ParamUtils.checkParam(configAdvanceInfo);
-        
+
         if (AggrWhitelist.isAggrDataId(dataId)) {
             LOGGER.warn("[aggr-conflict] {} attemp to publish single data, {}, {}", RequestUtil.getRemoteIp(request),
                     dataId, group);
             throw new NacosException(NacosException.NO_RIGHT, "dataId:" + dataId + " is aggr");
         }
-        
+
         final Timestamp time = TimeUtils.getCurrentTime();
         String betaIps = request.getHeader("betaIps");
         ConfigInfo configInfo = new ConfigInfo(dataId, group, tenant, appName, content);
         configInfo.setType(type);
         if (StringUtils.isBlank(betaIps)) {
             if (StringUtils.isBlank(tag)) {
+                // 更新数据库配置
+                //ExternalStoragePersistServiceImpl.insertOrUpdate()   mysql
                 persistService.insertOrUpdate(srcIp, srcUser, configInfo, time, configAdvanceInfo, true);
+                /**
+                 * 发布ConfigDataChangeEvent事件  ConfigDataChangeEvent的订阅者是AsyncNotifyService
+                 */
+                //如果使用derby数据源且使用集群模式启动将直接返回。言外之意，使用derby数据源的集群模式下，
+                // 需要通过其他方式将配置同步到所有节点（PersistService实现不一样）。
                 ConfigChangePublisher
                         .notifyConfigChange(new ConfigDataChangeEvent(false, dataId, group, tenant, time.getTime()));
             } else {
@@ -183,8 +196,14 @@ public class ConfigController {
                         ConfigTraceService.PERSISTENCE_EVENT_PUB, content);
         return true;
     }
-    
+
     /**
+     *
+     *  配置查询
+     *  1、需要先获取配置项的读锁，根据获取成功与否返回不同状态码
+     *  2.获取读锁成功后，查询配置。
+     *      2.1如果单机部署且使用默认derby数据源，将实时查询配置返回；
+     *      2.2如果集群部署或使用mysql数据源，将查询本地文件系统中的缓存配置返回。
      * Get configure board infomation fail.
      *
      * @throws ServletException ServletException.
@@ -204,11 +223,11 @@ public class ConfigController {
         // check params
         ParamUtils.checkParam(dataId, group, "datumId", "content");
         ParamUtils.checkParam(tag);
-        
+
         final String clientIp = RequestUtil.getRemoteIp(request);
         inner.doGetConfig(request, response, dataId, group, tenant, tag, clientIp);
     }
-    
+
     /**
      * Get the specific configuration information that the console USES.
      *
@@ -226,7 +245,7 @@ public class ConfigController {
         ParamUtils.checkParam(dataId, group, "datumId", "content");
         return persistService.findConfigAllInfo(dataId, group, tenant);
     }
-    
+
     /**
      * Synchronously delete all pre-aggregation data under a dataId.
      *
@@ -257,7 +276,7 @@ public class ConfigController {
                 .notifyConfigChange(new ConfigDataChangeEvent(false, dataId, group, tenant, tag, time.getTime()));
         return true;
     }
-    
+
     /**
      * Execute delete config operation.
      *
@@ -286,7 +305,7 @@ public class ConfigController {
         }
         return RestResultUtils.success(true);
     }
-    
+
     @GetMapping("/catalog")
     @Secured(action = ActionTypes.READ, parser = ConfigResourceParser.class)
     public RestResult<ConfigAdvanceInfo> getConfigAdvanceInfo(@RequestParam("dataId") String dataId,
@@ -298,33 +317,39 @@ public class ConfigController {
         rr.setData(configInfo);
         return rr;
     }
-    
+
     /**
      * The client listens for configuration changes.
+     *  配置监听，是长轮询服务端的逻辑
+     *  1、先校验客户端配置项md5与服务端内存中缓存的md5是否一致，不一致直接拼接结果返回，这里返回的是发生变化的groupKey，由客户端发起二次请求/v1/cs/configs查询最新配置。
+     *  2、如果客户端配置项md5已经最新，请求头中包含Long-Pulling-Timeout-No-Hangup=true，则立即返回200。
+     *  3、如果不满足上述两点，开启AsyncContext，并提交一个ClientLongPolling任务等待配置发生变更后，响应客户端。
      */
     @PostMapping("/listener")
     @Secured(action = ActionTypes.READ, parser = ConfigResourceParser.class)
     public void listener(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
+        // 设置request支持AsyncContext
         request.setAttribute("org.apache.catalina.ASYNC_SUPPORTED", true);
         String probeModify = request.getParameter("Listening-Configs");
         if (StringUtils.isBlank(probeModify)) {
             throw new IllegalArgumentException("invalid probeModify");
         }
-        
+
         probeModify = URLDecoder.decode(probeModify, Constants.ENCODE);
-        
+
         Map<String, String> clientMd5Map;
         try {
+            // 解析客户端业务报文为 groupKey - 客户端当前配置md5
             clientMd5Map = MD5Util.getClientMd5Map(probeModify);
         } catch (Throwable e) {
             throw new IllegalArgumentException("invalid probeModify");
         }
-        
+
         // do long-polling
         inner.doPollingConfig(request, response, clientMd5Map, probeModify.length());
     }
-    
+
     /**
      * Subscribe to configured client information.
      */
@@ -342,7 +367,7 @@ public class ConfigController {
         }
         return gls;
     }
-    
+
     /**
      * Query the configuration information and return it in JSON format.
      */
@@ -368,7 +393,7 @@ public class ConfigController {
             throw new RuntimeException(errorMsg, e);
         }
     }
-    
+
     /**
      * Fuzzy query configuration information. Fuzzy queries based only on content are not allowed, that is, both dataId
      * and group are NULL, but content is not NULL. In this case, all configurations are returned.
@@ -395,7 +420,7 @@ public class ConfigController {
             throw new RuntimeException(errorMsg, e);
         }
     }
-    
+
     /**
      * Execute to remove beta operation.
      *
@@ -426,7 +451,7 @@ public class ConfigController {
         rr.setMessage("stop beta ok");
         return rr;
     }
-    
+
     /**
      * Execute to query beta operation.
      *
@@ -454,7 +479,7 @@ public class ConfigController {
             return rr;
         }
     }
-    
+
     /**
      * Execute export config operation.
      *
@@ -498,7 +523,7 @@ public class ConfigController {
         if (metaData != null) {
             zipItemList.add(new ZipUtils.ZipItem(".meta.yml", metaData.toString()));
         }
-        
+
         HttpHeaders headers = new HttpHeaders();
         String fileName =
                 EXPORT_CONFIG_FILE_NAME + DateFormatUtils.format(new Date(), EXPORT_CONFIG_FILE_NAME_DATE_FORMAT)
@@ -506,7 +531,7 @@ public class ConfigController {
         headers.add("Content-Disposition", "attachment;filename=" + fileName);
         return new ResponseEntity<byte[]>(ZipUtils.zip(zipItemList), headers, HttpStatus.OK);
     }
-    
+
     /**
      * Execute import and publish config operation.
      *
@@ -526,17 +551,17 @@ public class ConfigController {
             @RequestParam(value = "policy", defaultValue = "ABORT") SameConfigPolicy policy, MultipartFile file)
             throws NacosException {
         Map<String, Object> failedData = new HashMap<>(4);
-        
+
         if (Objects.isNull(file)) {
             return RestResultUtils.buildResult(ResultCodeEnum.DATA_EMPTY, failedData);
         }
-        
+
         namespace = NamespaceUtil.processNamespaceParameter(namespace);
         if (StringUtils.isNotBlank(namespace) && persistService.tenantInfoCountByTenantId(namespace) <= 0) {
             failedData.put("succCount", 0);
             return RestResultUtils.buildResult(ResultCodeEnum.NAMESPACE_NOT_EXIST, failedData);
         }
-        
+
         List<ConfigAllInfo> configInfoList = null;
         try {
             ZipUtils.UnZipResult unziped = ZipUtils.unzip(file.getBytes());
@@ -607,7 +632,7 @@ public class ConfigController {
         }
         return RestResultUtils.success("导入成功", saveResult);
     }
-    
+
     /**
      * Execute clone config operation.
      *
@@ -632,29 +657,29 @@ public class ConfigController {
             return RestResultUtils.buildResult(ResultCodeEnum.NO_SELECTED_CONFIG, failedData);
         }
         configBeansList.removeAll(Collections.singleton(null));
-    
+
         namespace = NamespaceUtil.processNamespaceParameter(namespace);
         if (StringUtils.isNotBlank(namespace) && persistService.tenantInfoCountByTenantId(namespace) <= 0) {
             failedData.put("succCount", 0);
             return RestResultUtils.buildResult(ResultCodeEnum.NAMESPACE_NOT_EXIST, failedData);
         }
-        
+
         List<Long> idList = new ArrayList<>(configBeansList.size());
         Map<Long, SameNamespaceCloneConfigBean> configBeansMap = configBeansList.stream()
                 .collect(Collectors.toMap(SameNamespaceCloneConfigBean::getCfgId, cfg -> {
                     idList.add(cfg.getCfgId());
                     return cfg;
                 }, (k1, k2) -> k1));
-        
+
         List<ConfigAllInfo> queryedDataList = persistService.findAllConfigInfo4Export(null, null, null, null, idList);
-        
+
         if (queryedDataList == null || queryedDataList.isEmpty()) {
             failedData.put("succCount", 0);
             return RestResultUtils.buildResult(ResultCodeEnum.DATA_EMPTY, failedData);
         }
-        
+
         List<ConfigAllInfo> configInfoList4Clone = new ArrayList<>(queryedDataList.size());
-        
+
         for (ConfigAllInfo ci : queryedDataList) {
             SameNamespaceCloneConfigBean prarmBean = configBeansMap.get(ci.getId());
             ConfigAllInfo ci4save = new ConfigAllInfo();
@@ -671,7 +696,7 @@ public class ConfigController {
             }
             configInfoList4Clone.add(ci4save);
         }
-        
+
         if (configInfoList4Clone.isEmpty()) {
             failedData.put("succCount", 0);
             return RestResultUtils.buildResult(ResultCodeEnum.DATA_EMPTY, failedData);
@@ -692,5 +717,5 @@ public class ConfigController {
         }
         return RestResultUtils.success("Clone Completed Successfully", saveResult);
     }
-    
+
 }

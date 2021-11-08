@@ -28,22 +28,25 @@ import java.util.concurrent.Executor;
  */
 @SuppressWarnings("PMD.AbstractClassShouldStartWithAbstractNamingRule")
 public abstract class Subscriber<T extends Event> {
-    
+
     /**
      * Event callback.
-     *
+     * // 事件处理
      * @param event {@link Event}
      */
     public abstract void onEvent(T event);
-    
+
     /**
+     *  返回订阅的事件Class
      * Type of this subscriber's subscription.
      *
      * @return Class which extends {@link Event}
      */
     public abstract Class<? extends Event> subscribeType();
-    
+
     /**
+     *
+     *  可以自定义一个执行器，不在Publisher线程执行
      * It is up to the listener to determine whether the callback is asynchronous or synchronous.
      *
      * @return {@link Executor}
@@ -51,8 +54,9 @@ public abstract class Subscriber<T extends Event> {
     public Executor executor() {
         return null;
     }
-    
+
     /**
+     *  是否忽略过期的事件
      * Whether to ignore expired events.
      *
      * @return default value is {@link Boolean#FALSE}

@@ -214,12 +214,17 @@ public class CacheData {
 
     void checkListenerMd5() {
         for (ManagerListenerWrap wrap : listeners) {
+            // 比较CacheData中的md5与Listener中上次的md5是否相同
             if (!md5.equals(wrap.lastCallMd5)) {
+                // 不相同则触发监听器
                 safeNotifyListener(dataId, group, content, type, md5, wrap);
             }
         }
     }
 
+    /**
+     * 如果Listener配置了自己的Executor，将在自己配置的线程服务里执行监听逻辑，默认使用长轮询线程执行监听逻辑。
+     */
     private void safeNotifyListener(final String dataId, final String group, final String content, final String type,
             final String md5, final ManagerListenerWrap listenerWrap) {
         final Listener listener = listenerWrap.listener;
@@ -230,6 +235,7 @@ public class CacheData {
                 ClassLoader myClassLoader = Thread.currentThread().getContextClassLoader();
                 ClassLoader appClassLoader = listener.getClass().getClassLoader();
                 try {
+                    // 如果是AbstractSharedListener，把dataId和group放到它的成员变量里
                     if (listener instanceof AbstractSharedListener) {
                         AbstractSharedListener adapter = (AbstractSharedListener) listener;
                         adapter.fillContext(dataId, group);
@@ -242,19 +248,26 @@ public class CacheData {
                     cr.setDataId(dataId);
                     cr.setGroup(group);
                     cr.setContent(content);
+                    // 给用户的钩子，忽略
                     configFilterChainManager.doFilter(null, cr);
                     String contentTmp = cr.getContent();
+                    // 触发监听器的receiveConfigInfo方法 如果是普通的Listener，会触发receiveConfigInfo方法，得到一个String，是变更后的配置值。
                     listener.receiveConfigInfo(contentTmp);
 
                     // compare lastContent and content
+                    // 如果是AbstractConfigChangeListener实例，触发receiveConfigChange方法 ，得到一个ConfigChangeEvent。
+                    //但是AbstractConfigChangeListener监听是有前提条件的，配置文件必须是yaml格式或properties格式，否则将不会触发Listener逻辑！
+                    // 见ConfigChangeHandler的parseChangeData方法，如果找不到解析器，会返回一个空的map。
+
                     if (listener instanceof AbstractConfigChangeListener) {
                         Map data = ConfigChangeHandler.getInstance()
                                 .parseChangeData(listenerWrap.lastContent, content, type);
+                        // 如果map为空，这里构造的event里的数据就也为空了，监听器感知不到配置变更
                         ConfigChangeEvent event = new ConfigChangeEvent(data);
                         ((AbstractConfigChangeListener) listener).receiveConfigChange(event);
                         listenerWrap.lastContent = content;
                     }
-
+                    // 更新监听器的上次md5值
                     listenerWrap.lastCallMd5 = md5;
                     LOGGER.info("[{}] [notify-ok] dataId={}, group={}, md5={}, listener={} ", name, dataId, group, md5,
                             listener);
@@ -272,9 +285,11 @@ public class CacheData {
 
         final long startNotify = System.currentTimeMillis();
         try {
+            // 如果监听器配置了executor，使用配置的executor执行上面的任务
             if (null != listener.getExecutor()) {
                 listener.getExecutor().execute(job);
             } else {
+                // 否则直接执行，也就是在长轮询线程中执行
                 job.run();
             }
         } catch (Throwable t) {
@@ -307,6 +322,7 @@ public class CacheData {
         this.tenant = TenantUtil.getUserTenantForAcm();
         listeners = new CopyOnWriteArrayList<ManagerListenerWrap>();
         this.isInitializing = true;
+        // 这里会从本地文件系统加载配置内容，failover > snapshot 先读取failover，failover没有则读取snapshot
         this.content = loadCacheContentFromDiskLocal(name, dataId, group, tenant);
         this.md5 = getMd5String(content);
     }
