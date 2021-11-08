@@ -44,17 +44,18 @@ import java.util.stream.Collectors;
 
 /**
  * Derby operation in stand-alone mode.
+ * 单机
  *
  * @author <a href="mailto:liaochuntao@live.com">liaochuntao</a>
  */
 @Conditional(ConditionStandaloneEmbedStorage.class)
 @Component
 public class StandaloneDatabaseOperateImpl implements BaseDatabaseOperate {
-    
+
     private JdbcTemplate jdbcTemplate;
-    
+
     private TransactionTemplate transactionTemplate;
-    
+
     @PostConstruct
     protected void init() {
         DataSourceService dataSourceService = DynamicDataSource.getInstance().getDataSource();
@@ -62,37 +63,37 @@ public class StandaloneDatabaseOperateImpl implements BaseDatabaseOperate {
         transactionTemplate = dataSourceService.getTransactionTemplate();
         LogUtil.DEFAULT_LOG.info("use StandaloneDatabaseOperateImpl");
     }
-    
+
     @Override
     public <R> R queryOne(String sql, Class<R> cls) {
         return queryOne(jdbcTemplate, sql, cls);
     }
-    
+
     @Override
     public <R> R queryOne(String sql, Object[] args, Class<R> cls) {
         return queryOne(jdbcTemplate, sql, args, cls);
     }
-    
+
     @Override
     public <R> R queryOne(String sql, Object[] args, RowMapper<R> mapper) {
         return queryOne(jdbcTemplate, sql, args, mapper);
     }
-    
+
     @Override
     public <R> List<R> queryMany(String sql, Object[] args, RowMapper<R> mapper) {
         return queryMany(jdbcTemplate, sql, args, mapper);
     }
-    
+
     @Override
     public <R> List<R> queryMany(String sql, Object[] args, Class<R> rClass) {
         return queryMany(jdbcTemplate, sql, args, rClass);
     }
-    
+
     @Override
     public List<Map<String, Object>> queryMany(String sql, Object[] args) {
         return queryMany(jdbcTemplate, sql, args);
     }
-    
+
     @Override
     public CompletableFuture<RestResult<String>> dataImport(File file) {
         return CompletableFuture.supplyAsync(() -> {
@@ -125,12 +126,12 @@ public class StandaloneDatabaseOperateImpl implements BaseDatabaseOperate {
             }
         });
     }
-    
+
     @Override
     public Boolean update(List<ModifyRequest> modifyRequests, BiConsumer<Boolean, Throwable> consumer) {
         return update(transactionTemplate, jdbcTemplate, modifyRequests, consumer);
     }
-    
+
     @Override
     public Boolean update(List<ModifyRequest> requestList) {
         return update(transactionTemplate, jdbcTemplate, requestList);

@@ -35,11 +35,11 @@ import java.util.Map;
  * @author <a href="mailto:liaochuntao@live.com">liaochuntao</a>
  */
 public class EmbeddedStorageContextUtils {
-    
+
     private static final ThreadLocal<ArrayList<ModifyRequest>> SQL_CONTEXT = ThreadLocal.withInitial(ArrayList::new);
-    
+
     private static final ThreadLocal<Map<String, String>> EXTEND_INFO_CONTEXT = ThreadLocal.withInitial(HashMap::new);
-    
+
     /**
      * Add sql context.
      *
@@ -55,7 +55,7 @@ public class EmbeddedStorageContextUtils {
         requests.add(context);
         SQL_CONTEXT.set(requests);
     }
-    
+
     /**
      * Put extend info.
      *
@@ -67,7 +67,7 @@ public class EmbeddedStorageContextUtils {
         old.put(key, value);
         EXTEND_INFO_CONTEXT.set(old);
     }
-    
+
     /**
      * Put all extend info.
      *
@@ -78,7 +78,7 @@ public class EmbeddedStorageContextUtils {
         old.putAll(map);
         EXTEND_INFO_CONTEXT.set(old);
     }
-    
+
     /**
      * In the case of the in-cluster storage mode, the logic of horizontal notification is implemented asynchronously
      * via the raft state machine, along with the information.
@@ -88,18 +88,19 @@ public class EmbeddedStorageContextUtils {
      * @param time       Operating time
      */
     public static void onModifyConfigInfo(ConfigInfo configInfo, String srcIp, Timestamp time) {
+        //将配置信息，封装为ConfigDumpEvent，作为扩展信息，放入了另外一个ThreadLocal中
         if (!EnvUtil.getStandaloneMode()) {
             ConfigDumpEvent event = ConfigDumpEvent.builder().remove(false).namespaceId(configInfo.getTenant())
                     .dataId(configInfo.getDataId()).group(configInfo.getGroup()).isBeta(false)
                     .content(configInfo.getContent()).type(configInfo.getType()).handleIp(srcIp)
                     .lastModifiedTs(time.getTime()).build();
-            
+
             Map<String, String> extendInfo = new HashMap<>(2);
             extendInfo.put(Constants.EXTEND_INFO_CONFIG_DUMP_EVENT, JacksonUtils.toJson(event));
             EmbeddedStorageContextUtils.putAllExtendInfo(extendInfo);
         }
     }
-    
+
     /**
      * In the case of the in-cluster storage mode, the logic of horizontal notification is implemented asynchronously
      * via the raft state machine, along with the information.
@@ -115,13 +116,13 @@ public class EmbeddedStorageContextUtils {
                     .dataId(configInfo.getDataId()).group(configInfo.getGroup()).isBeta(true).betaIps(betaIps)
                     .content(configInfo.getContent()).type(configInfo.getType()).handleIp(srcIp)
                     .lastModifiedTs(time.getTime()).build();
-            
+
             Map<String, String> extendInfo = new HashMap<>(2);
             extendInfo.put(Constants.EXTEND_INFO_CONFIG_DUMP_EVENT, JacksonUtils.toJson(event));
             EmbeddedStorageContextUtils.putAllExtendInfo(extendInfo);
         }
     }
-    
+
     /**
      * In the case of the in-cluster storage mode, the logic of horizontal notification is implemented asynchronously
      * via the raft state machine, along with the information.
@@ -137,13 +138,13 @@ public class EmbeddedStorageContextUtils {
                     .dataId(configInfo.getDataId()).group(configInfo.getGroup()).isBeta(false).tag(tag)
                     .content(configInfo.getContent()).type(configInfo.getType()).handleIp(srcIp)
                     .lastModifiedTs(time.getTime()).build();
-            
+
             Map<String, String> extendInfo = new HashMap<>(2);
             extendInfo.put(Constants.EXTEND_INFO_CONFIG_DUMP_EVENT, JacksonUtils.toJson(event));
             EmbeddedStorageContextUtils.putAllExtendInfo(extendInfo);
         }
     }
-    
+
     /**
      * In the case of the in-cluster storage mode, the logic of horizontal notification is implemented asynchronously
      * via the raft state machine, along with the information.
@@ -159,13 +160,13 @@ public class EmbeddedStorageContextUtils {
         if (!EnvUtil.getStandaloneMode()) {
             ConfigDumpEvent event = ConfigDumpEvent.builder().remove(true).namespaceId(namespaceId).group(group)
                     .dataId(dataId).isBeta(false).handleIp(srcIp).lastModifiedTs(time.getTime()).build();
-            
+
             Map<String, String> extendInfo = new HashMap<>(2);
             extendInfo.put(Constants.EXTEND_INFO_CONFIG_DUMP_EVENT, JacksonUtils.toJson(event));
             EmbeddedStorageContextUtils.putAllExtendInfo(extendInfo);
         }
     }
-    
+
     /**
      * In the case of the in-cluster storage mode, the logic of horizontal notification is implemented asynchronously
      * via the raft state machine, along with the information.
@@ -180,16 +181,16 @@ public class EmbeddedStorageContextUtils {
                         StringUtils.isBlank(configInfo.getTenant()) ? StringUtils.EMPTY : configInfo.getTenant();
                 ConfigDumpEvent event = ConfigDumpEvent.builder().remove(true).namespaceId(namespaceId)
                         .group(configInfo.getGroup()).dataId(configInfo.getDataId()).isBeta(false).build();
-                
+
                 events.add(event);
             }
-            
+
             Map<String, String> extendInfo = new HashMap<>(2);
             extendInfo.put(Constants.EXTEND_INFOS_CONFIG_DUMP_EVENT, JacksonUtils.toJson(events));
             EmbeddedStorageContextUtils.putAllExtendInfo(extendInfo);
         }
     }
-    
+
     /**
      * In the case of the in-cluster storage mode, the logic of horizontal notification is implemented asynchronously
      * via the raft state machine, along with the information.
@@ -203,13 +204,13 @@ public class EmbeddedStorageContextUtils {
         if (!EnvUtil.getStandaloneMode()) {
             ConfigDumpEvent event = ConfigDumpEvent.builder().remove(true).namespaceId(namespaceId).dataId(dataId)
                     .group(group).isBeta(true).build();
-            
+
             Map<String, String> extendInfo = new HashMap<>(2);
             extendInfo.put(Constants.EXTEND_INFO_CONFIG_DUMP_EVENT, JacksonUtils.toJson(event));
             EmbeddedStorageContextUtils.putAllExtendInfo(extendInfo);
         }
     }
-    
+
     /**
      * In the case of the in-cluster storage mode, the logic of horizontal notification is implemented asynchronously
      * via the raft state machine, along with the information.
@@ -225,13 +226,13 @@ public class EmbeddedStorageContextUtils {
         if (!EnvUtil.getStandaloneMode()) {
             ConfigDumpEvent event = ConfigDumpEvent.builder().remove(true).namespaceId(namespaceId).group(group)
                     .dataId(dataId).isBeta(true).tag(tag).handleIp(srcIp).build();
-            
+
             Map<String, String> extendInfo = new HashMap<>(2);
             extendInfo.put(Constants.EXTEND_INFO_CONFIG_DUMP_EVENT, JacksonUtils.toJson(event));
             EmbeddedStorageContextUtils.putAllExtendInfo(extendInfo);
         }
     }
-    
+
     /**
      * Determine if key is included.
      *
@@ -244,18 +245,18 @@ public class EmbeddedStorageContextUtils {
         EXTEND_INFO_CONTEXT.set(extendInfo);
         return exist;
     }
-    
+
     public static List<ModifyRequest> getCurrentSqlContext() {
         return SQL_CONTEXT.get();
     }
-    
+
     public static Map<String, String> getCurrentExtendInfo() {
         return EXTEND_INFO_CONTEXT.get();
     }
-    
+
     public static void cleanAllContext() {
         SQL_CONTEXT.remove();
         EXTEND_INFO_CONTEXT.remove();
     }
-    
+
 }

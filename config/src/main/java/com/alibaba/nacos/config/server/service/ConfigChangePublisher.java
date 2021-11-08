@@ -27,17 +27,18 @@ import com.alibaba.nacos.sys.env.EnvUtil;
  * @author <a href="mailto:liaochuntao@live.com">liaochuntao</a>
  */
 public class ConfigChangePublisher {
-    
+
     /**
      * Notify ConfigChange.
      *
      * @param event ConfigDataChangeEvent instance.
      */
     public static void notifyConfigChange(ConfigDataChangeEvent event) {
+        // 集群启动（-Dnacos.standalone=false），嵌入式数据源（ -DembeddedStorage=true），不处理
         if (PropertyUtil.isEmbeddedStorage() && !EnvUtil.getStandaloneMode()) {
             return;
         }
         NotifyCenter.publishEvent(event);
     }
-    
+
 }

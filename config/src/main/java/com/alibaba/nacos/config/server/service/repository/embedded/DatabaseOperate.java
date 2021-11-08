@@ -34,7 +34,7 @@ import java.util.function.BiConsumer;
  * @author <a href="mailto:liaochuntao@live.com">liaochuntao</a>
  */
 public interface DatabaseOperate {
-    
+
     /**
      * Data query transaction.
      *
@@ -44,7 +44,7 @@ public interface DatabaseOperate {
      * @return query result
      */
     <R> R queryOne(String sql, Class<R> cls);
-    
+
     /**
      * Data query transaction.
      *
@@ -55,7 +55,7 @@ public interface DatabaseOperate {
      * @return query result
      */
     <R> R queryOne(String sql, Object[] args, Class<R> cls);
-    
+
     /**
      * Data query transaction.
      *
@@ -66,7 +66,7 @@ public interface DatabaseOperate {
      * @return query result
      */
     <R> R queryOne(String sql, Object[] args, RowMapper<R> mapper);
-    
+
     /**
      * Data query transaction.
      *
@@ -77,7 +77,7 @@ public interface DatabaseOperate {
      * @return query result
      */
     <R> List<R> queryMany(String sql, Object[] args, RowMapper<R> mapper);
-    
+
     /**
      * Data query transaction.
      *
@@ -88,7 +88,7 @@ public interface DatabaseOperate {
      * @return query result
      */
     <R> List<R> queryMany(String sql, Object[] args, Class<R> rClass);
-    
+
     /**
      * Data query transaction.
      *
@@ -97,7 +97,7 @@ public interface DatabaseOperate {
      * @return query result
      */
     List<Map<String, Object>> queryMany(String sql, Object[] args);
-    
+
     /**
      * data modify transaction.
      *
@@ -106,7 +106,7 @@ public interface DatabaseOperate {
      * @return is success
      */
     Boolean update(List<ModifyRequest> modifyRequests, BiConsumer<Boolean, Throwable> consumer);
-    
+
     /**
      * data modify transaction.
      *
@@ -116,7 +116,7 @@ public interface DatabaseOperate {
     default Boolean update(List<ModifyRequest> modifyRequests) {
         return update(modifyRequests, null);
     }
-    
+
     /**
      * data importing, This method is suitable for importing data from external data sources into embedded data
      * sources.
@@ -125,7 +125,7 @@ public interface DatabaseOperate {
      * @return {@link CompletableFuture}
      */
     CompletableFuture<RestResult<String>> dataImport(File file);
-    
+
     /**
      * data modify transaction The SqlContext to be executed in the current thread will be executed and automatically
      * cleared.
@@ -135,7 +135,7 @@ public interface DatabaseOperate {
     default Boolean blockUpdate() {
         return blockUpdate(null);
     }
-    
+
     /**
      * data modify transaction The SqlContext to be executed in the current thread will be executed and automatically
      * cleared.
@@ -146,12 +146,13 @@ public interface DatabaseOperate {
      */
     default Boolean blockUpdate(BiConsumer<Boolean, Throwable> consumer) {
         try {
+            //DistributedDatabaseOperateImpl.update
             return update(EmbeddedStorageContextUtils.getCurrentSqlContext(), consumer);
         } finally {
             EmbeddedStorageContextUtils.cleanAllContext();
         }
     }
-    
+
     /**
      * data modify transaction The SqlContext to be executed in the current thread will be executed and automatically
      * cleared.
@@ -173,5 +174,5 @@ public interface DatabaseOperate {
             EmbeddedStorageContextUtils.cleanAllContext();
         }
     }
-    
+
 }
