@@ -110,6 +110,7 @@ public class ConfigController {
         this.inner = configServletInner;
         this.persistService = persistService;
         this.configSubService = configSubService;
+        System.out.println(Boolean.getBoolean("nacos.standalone") + "====" + persistService.getClass().getSimpleName());
     }
 
     /**
@@ -171,7 +172,8 @@ public class ConfigController {
         if (StringUtils.isBlank(betaIps)) {
             if (StringUtils.isBlank(tag)) {
                 // 更新数据库配置
-                //ExternalStoragePersistServiceImpl.insertOrUpdate()   mysql
+                //ExternalStoragePersistServiceImpl.insertOrUpdate()      nacos.standalone = false   集群
+                //EmbeddedStoragePersistServiceImpl.insertOrUpdate()      nacos.standalone = true 单机
                 persistService.insertOrUpdate(srcIp, srcUser, configInfo, time, configAdvanceInfo, true);
                 /**
                  * 发布ConfigDataChangeEvent事件  ConfigDataChangeEvent的订阅者是AsyncNotifyService
@@ -229,6 +231,7 @@ public class ConfigController {
     }
 
     /**
+     *  取数据
      * Get the specific configuration information that the console USES.
      *
      * @throws NacosException NacosException.
@@ -247,6 +250,8 @@ public class ConfigController {
     }
 
     /**
+     *
+     *  同步删除某个dataId下面的所有聚合前数据
      * Synchronously delete all pre-aggregation data under a dataId.
      *
      * @throws NacosException NacosException.

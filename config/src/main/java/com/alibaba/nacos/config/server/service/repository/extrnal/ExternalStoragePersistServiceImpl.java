@@ -99,6 +99,8 @@ import static com.alibaba.nacos.config.server.service.repository.RowMapperManage
 /**
  * External Storage Persist Service.
  *
+ *  -Dnacos.standalone=true   单机
+ *
  * @author <a href="mailto:liaochuntao@live.com">liaochuntao</a>
  * @author klw
  */

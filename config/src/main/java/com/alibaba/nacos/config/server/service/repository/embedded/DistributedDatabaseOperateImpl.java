@@ -541,7 +541,7 @@ public class DistributedDatabaseOperateImpl extends RequestProcessor4CP implemen
                 // If there is additional information, post processing
                 // Put into the asynchronous thread pool for processing to avoid blocking the
                 // normal execution of the state machine
-                // 2. DumpEvent
+                // 2. DumpEvent     // 从扩展信息中，反序列化ConfigDumpEvent，发布事件
                 ConfigExecutor.executeEmbeddedDump(() -> handleExtendInfo(log.getExtendInfoMap()));
             }
 

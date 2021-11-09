@@ -112,8 +112,10 @@ public class ConfigCacheService {
                 // 如果使用mysql数据库，这里会保存配置文件到磁盘上，供之后读取
                 DiskUtil.saveToDisk(dataId, group, tenant, content);
             }
-            // 更新内存中配置的md5，发布LocalDataChangeEvent
-            //LongPollingService监听LocalDataChangeEvent事件
+            /**
+             *   更新内存中配置的md5，发布LocalDataChangeEvent
+             *   LongPollingService监听LocalDataChangeEvent事件
+             */
             updateMd5(groupKey, md5, lastModifiedTs);
             return true;
         } catch (IOException ioe) {

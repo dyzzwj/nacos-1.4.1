@@ -94,8 +94,7 @@ import static com.alibaba.nacos.config.server.utils.LogUtil.DEFAULT_LOG;
 
 /**
  * For Apache Derby.
- *
- * @author <a href="mailto:liaochuntao@live.com">liaochuntao</a>
+ *  nacos.standalone = false 集群
  */
 @SuppressWarnings({"PMD.MethodReturnWrapperTypeRule", "checkstyle:linelength"})
 @Conditional(value = ConditionOnEmbeddedStorage.class)
