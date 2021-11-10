@@ -321,10 +321,17 @@ public class NacosNamingService implements NamingService {
             boolean subscribe) throws NacosException {
 
         ServiceInfo serviceInfo;
+
+        /**
+         * 实际上订阅和直接查询调用的都是GET /nacos/v1/ns/instance/list，区别在于订阅请求中的udpPort参数，带上了客户端的UDP端口号，
+         * 而直接查询请求，UDP端口号是0，这点在下一章服务端的时候会看到
+         */
         if (subscribe) {
+            // subscribe=true，走三层存储查询，订阅服务
             serviceInfo = hostReactor.getServiceInfo(NamingUtils.getGroupedName(serviceName, groupName),
                     StringUtils.join(clusters, ","));
         } else {
+            // subscribe=false，直接通过NamingProxy获取服务端注册表
             serviceInfo = hostReactor
                     .getServiceInfoDirectlyFromServer(NamingUtils.getGroupedName(serviceName, groupName),
                             StringUtils.join(clusters, ","));
@@ -480,6 +487,7 @@ public class NacosNamingService implements NamingService {
     @Override
     public void subscribe(String serviceName, String groupName, List<String> clusters, EventListener listener)
             throws NacosException {
+        //委托给hostReactor
         hostReactor.subscribe(NamingUtils.getGroupedName(serviceName, groupName), StringUtils.join(clusters, ","),
                 listener);
     }
