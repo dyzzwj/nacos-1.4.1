@@ -35,39 +35,42 @@ import java.util.List;
  */
 @JsonInclude(Include.NON_NULL)
 public class ServiceInfo {
-    
+
     @JsonIgnore
     private String jsonFromServer = EMPTY;
-    
+
     public static final String SPLITER = "@@";
-    
+
+    //服务名
     private String name;
-    
+
+    //分组名
     private String groupName;
-    
+
+    //集群，都好分割
     private String clusters;
-    
+
     private long cacheMillis = 1000L;
-    
+    //Instance实例
     private List<Instance> hosts = new ArrayList<Instance>();
-    
+
     private long lastRefTime = 0L;
-    
+
     private String checksum = "";
-    
+
     private volatile boolean allIPs = false;
-    
+
     public ServiceInfo() {
     }
-    
+
     public boolean isAllIPs() {
         return allIPs;
     }
-    
+
     public void setAllIPs(boolean allIPs) {
         this.allIPs = allIPs;
     }
-    
+
     /**
      * There is only one form of the key:groupName@@name@clusters. This constuctor used by DiskCache.read(String) and
      * FailoverReactor.FailoverFileReader,you should know that 'groupName' must not be null,and 'clusters' can be null.
@@ -77,7 +80,7 @@ public class ServiceInfo {
         int clusterIndex = 2;
         int serviceNameIndex = 1;
         int groupIndex = 0;
-        
+
         String[] keys = key.split(Constants.SERVICE_INFO_SPLITER);
         if (keys.length >= maxIndex + 1) {
             this.groupName = keys[groupIndex];
@@ -91,72 +94,72 @@ public class ServiceInfo {
             throw new IllegalArgumentException("Cann't parse out 'groupName',but it must not be null!");
         }
     }
-    
+
     public ServiceInfo(String name, String clusters) {
         this.name = name;
         this.clusters = clusters;
     }
-    
+
     public int ipCount() {
         return hosts.size();
     }
-    
+
     public boolean expired() {
         return System.currentTimeMillis() - lastRefTime > cacheMillis;
     }
-    
+
     public void setHosts(List<Instance> hosts) {
         this.hosts = hosts;
     }
-    
+
     public boolean isValid() {
         return hosts != null;
     }
-    
+
     public String getName() {
         return name;
     }
-    
+
     public void setName(String name) {
         this.name = name;
     }
-    
+
     public String getGroupName() {
         return groupName;
     }
-    
+
     public void setGroupName(String groupName) {
         this.groupName = groupName;
     }
-    
+
     public void setLastRefTime(long lastRefTime) {
         this.lastRefTime = lastRefTime;
     }
-    
+
     public long getLastRefTime() {
         return lastRefTime;
     }
-    
+
     public String getClusters() {
         return clusters;
     }
-    
+
     public void setClusters(String clusters) {
         this.clusters = clusters;
     }
-    
+
     public long getCacheMillis() {
         return cacheMillis;
     }
-    
+
     public void setCacheMillis(long cacheMillis) {
         this.cacheMillis = cacheMillis;
     }
-    
+
     public List<Instance> getHosts() {
         return new ArrayList<Instance>(hosts);
     }
-    
+
     /**
      * Judge whether service info is validate.
      *
@@ -166,17 +169,17 @@ public class ServiceInfo {
         if (isAllIPs()) {
             return true;
         }
-        
+
         if (hosts == null) {
             return false;
         }
-        
+
         List<Instance> validHosts = new ArrayList<Instance>();
         for (Instance host : hosts) {
             if (!host.isHealthy()) {
                 continue;
             }
-            
+
             for (int i = 0; i < host.getWeight(); i++) {
                 validHosts.add(host);
             }
@@ -184,32 +187,32 @@ public class ServiceInfo {
         //No valid hosts, return false.
         return !validHosts.isEmpty();
     }
-    
+
     @JsonIgnore
     public String getJsonFromServer() {
         return jsonFromServer;
     }
-    
+
     public void setJsonFromServer(String jsonFromServer) {
         this.jsonFromServer = jsonFromServer;
     }
-    
+
     @JsonIgnore
     public String getKey() {
         String serviceName = getGroupedServiceName();
         return getKey(serviceName, clusters);
     }
-    
+
     @JsonIgnore
     public static String getKey(String name, String clusters) {
-        
+
         if (!isEmpty(clusters)) {
             return name + Constants.SERVICE_INFO_SPLITER + clusters;
         }
-        
+
         return name;
     }
-    
+
     @JsonIgnore
     public String getKeyEncoded() {
         String serviceName = getGroupedServiceName();
@@ -220,7 +223,7 @@ public class ServiceInfo {
         }
         return getKey(serviceName, clusters);
     }
-    
+
     private String getGroupedServiceName() {
         String serviceName = this.name;
         if (!isEmpty(groupName) && serviceName.indexOf(Constants.SERVICE_INFO_SPLITER) == -1) {
@@ -228,7 +231,7 @@ public class ServiceInfo {
         }
         return serviceName;
     }
-    
+
     /**
      * Get {@link ServiceInfo} from key.
      *
@@ -249,33 +252,33 @@ public class ServiceInfo {
         }
         return serviceInfo;
     }
-    
+
     @Override
     public String toString() {
         return getKey();
     }
-    
+
     public String getChecksum() {
         return checksum;
     }
-    
+
     public void setChecksum(String checksum) {
         this.checksum = checksum;
     }
-    
+
     private static boolean isEmpty(String str) {
         return str == null || str.length() == 0;
     }
-    
+
     private static boolean isEmpty(Collection coll) {
         return (coll == null || coll.isEmpty());
     }
-    
+
     private static boolean strEquals(String str1, String str2) {
         return str1 == null ? str2 == null : str1.equals(str2);
     }
-    
+
     private static final String EMPTY = "";
-    
+
     private static final String ALL_IPS = "000--00-ALL_IPS--00--000";
 }

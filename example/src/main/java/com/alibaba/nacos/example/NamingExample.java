@@ -36,25 +36,28 @@ import java.util.concurrent.TimeUnit;
  * @author nkorange
  */
 public class NamingExample {
-    
+
     public static void main(String[] args) throws NacosException {
-        
+
         Properties properties = new Properties();
         properties.setProperty("serverAddr", System.getProperty("serverAddr"));
         properties.setProperty("namespace", System.getProperty("namespace"));
-        
+
+        //创建命名服务
         NamingService naming = NamingFactory.createNamingService(properties);
-        
+
+        //服务注册
         naming.registerInstance("nacos.test.3", "11.11.11.11", 8888, "TEST1");
-        
+
         naming.registerInstance("nacos.test.3", "2.2.2.2", 9999, "DEFAULT");
-        
+
+        //服务发现
         System.out.println(naming.getAllInstances("nacos.test.3"));
-        
+        //服务注销
         naming.deregisterInstance("nacos.test.3", "2.2.2.2", 9999, "DEFAULT");
-        
+        // 服务发现：根据服务名称 获取服务实例列表
         System.out.println(naming.getAllInstances("nacos.test.3"));
-        
+
         Executor executor = new ThreadPoolExecutor(1, 1, 0L, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<Runnable>(),
                 new ThreadFactory() {
                     @Override
@@ -64,16 +67,17 @@ public class NamingExample {
                         return thread;
                     }
                 });
-        
+
+        // 服务发现：监听服务变更
         naming.subscribe("nacos.test.3", new AbstractEventListener() {
-            
+
             //EventListener onEvent is sync to handle, If process too low in onEvent, maybe block other onEvent callback.
             //So you can override getExecutor() to async handle event.
             @Override
             public Executor getExecutor() {
                 return executor;
             }
-            
+
             @Override
             public void onEvent(Event event) {
                 System.out.println(((NamingEvent) event).getServiceName());
