@@ -25,30 +25,33 @@ package com.alibaba.nacos.core.cluster;
  * @author <a href="mailto:liaochuntao@live.com">liaochuntao</a>
  */
 public enum NodeState {
-    
+
     /**
      * Node is starting.
      */
     STARTING,
-    
+
     /**
+     *  健康检查通过。
      * Node is up and ready for request.
      */
     UP,
-    
+
     /**
+     *  健康检查失败，且失败次数小于一定阈值。
      * Node may Crash.
      */
     SUSPICIOUS,
-    
+
     /**
+     *  健康检查失败，且失败次数大于一定阈值。
      * Node is out of service, something abnormal happened.
      */
     DOWN,
-    
+
     /**
      * The Node is isolated.
      */
     ISOLATION,
-    
+
 }

@@ -521,6 +521,7 @@ public class NamingProxy implements Closeable {
 
         NacosException exception = new NacosException();
 
+
         if (StringUtils.isNotBlank(nacosDomain)) {
             for (int i = 0; i < maxRetry; i++) {
                 try {
@@ -533,6 +534,11 @@ public class NamingProxy implements Closeable {
                 }
             }
         } else {
+            /**
+             * 对于客户端，服务端每个节点是对等的，无论读写请求发往哪个节点都可以被处理。如果某个节点处理失败，客户端会重新选择一个节点请求。
+             * 客户端的请求主要包括：服务注册、服务查询、服务监听、心跳请求等。
+             */
+            // 随机选择某个节点作为第一次请求节点
             Random random = new Random(System.currentTimeMillis());
             int index = random.nextInt(servers.size());
 
@@ -546,6 +552,7 @@ public class NamingProxy implements Closeable {
                         NAMING_LOGGER.debug("request {} failed.", server, e);
                     }
                 }
+                // 发生异常，选择下一个节点尝试请求
                 index = (index + 1) % servers.size();
             }
         }
