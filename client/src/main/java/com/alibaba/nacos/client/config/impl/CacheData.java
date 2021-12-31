@@ -255,11 +255,11 @@ public class CacheData {
                     listener.receiveConfigInfo(contentTmp);
 
                     // compare lastContent and content
-                    // 如果是AbstractConfigChangeListener实例，触发receiveConfigChange方法 ，得到一个ConfigChangeEvent。
+                    // 如果是AbstractConfigChangeListener实例，触发receiveConfigChange方法
                     //但是AbstractConfigChangeListener监听是有前提条件的，配置文件必须是yaml格式或properties格式，否则将不会触发Listener逻辑！
                     // 见ConfigChangeHandler的parseChangeData方法，如果找不到解析器，会返回一个空的map。
-
                     if (listener instanceof AbstractConfigChangeListener) {
+                        //解析 目前仅支持properties和yaml
                         Map data = ConfigChangeHandler.getInstance()
                                 .parseChangeData(listenerWrap.lastContent, content, type);
                         // 如果map为空，这里构造的event里的数据就也为空了，监听器感知不到配置变更

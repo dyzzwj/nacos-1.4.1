@@ -47,8 +47,8 @@ import static com.alibaba.nacos.config.server.utils.LogUtil.FATAL_LOG;
 import static com.alibaba.nacos.config.server.utils.LogUtil.DEFAULT_LOG;
 
 /**
- * Config service.
  *
+ *   负责管理所有内存配置CacheItem
  * @author Nacos
  */
 public class ConfigCacheService {

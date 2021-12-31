@@ -6,6 +6,7 @@ import com.alibaba.nacos.api.config.listener.AbstractListener;
 import com.alibaba.nacos.api.exception.NacosException;
 
 import java.util.Properties;
+import java.util.Scanner;
 
 
 /**

@@ -68,6 +68,66 @@ public class ClientWorker implements Closeable {
 
     private static final Logger LOGGER = LogUtils.logger(ClientWorker.class);
 
+
+    @SuppressWarnings("PMD.ThreadPoolCreationRule")
+    public ClientWorker(final HttpAgent agent, final ConfigFilterChainManager configFilterChainManager,
+                        final Properties properties) {
+        this.agent = agent;
+        this.configFilterChainManager = configFilterChainManager;
+
+        // Initialize the timeout parameter
+        // 初始化一些参数，如：timeout
+        init(properties);
+        // 单线程执行器
+        this.executor = Executors.newScheduledThreadPool(1, new ThreadFactory() {
+            @Override
+            public Thread newThread(Runnable r) {
+                Thread t = new Thread(r);
+                t.setName("com.alibaba.nacos.client.Worker." + agent.getName());
+                t.setDaemon(true);
+                return t;
+            }
+        });
+        // 执行LongPollingRunnable的执行器，固定线程数=核数
+        this.executorService = Executors
+            .newScheduledThreadPool(Runtime.getRuntime().availableProcessors(), new ThreadFactory() {
+                @Override
+                public Thread newThread(Runnable r) {
+                    Thread t = new Thread(r);
+                    t.setName("com.alibaba.nacos.client.Worker.longPolling." + agent.getName());
+                    t.setDaemon(true);
+                    return t;
+                }
+            });
+
+
+        this.executor.scheduleWithFixedDelay(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    /**  10ms执行一次
+                     * 负责检测当前情况（cacheMap大小及当前已经提交的长轮询任务数），是否需要提交新的长轮询任务到executorService中，固定线程数=1。
+                     */
+                    checkConfigInfo();
+                } catch (Throwable e) {
+                    LOGGER.error("[" + agent.getName() + "] [sub-check] rotate check error", e);
+                }
+            }
+        }, 1L, 10L, TimeUnit.MILLISECONDS);
+    }
+
+    private void init(Properties properties) {
+
+        timeout = Math.max(ConvertUtils.toInt(properties.getProperty(PropertyKeyConst.CONFIG_LONG_POLL_TIMEOUT),
+            Constants.CONFIG_LONG_POLL_TIMEOUT), Constants.MIN_CONFIG_LONG_POLL_TIMEOUT);
+
+        taskPenaltyTime = ConvertUtils
+            .toInt(properties.getProperty(PropertyKeyConst.CONFIG_RETRY_TIME), Constants.CONFIG_RETRY_TIME);
+
+        this.enableRemoteSyncConfig = Boolean
+            .parseBoolean(properties.getProperty(PropertyKeyConst.ENABLE_REMOTE_SYNC_CONFIG));
+    }
+
     /**
      * Add listeners for data.
      *
@@ -235,7 +295,6 @@ public class ClientWorker implements Closeable {
             }
             // 计算所属长轮询任务id
             int taskId = cacheMap.size() / (int) ParamUtil.getPerTaskConfigSize();
-
             cacheData.setTaskId(taskId);
             lastCacheData = cacheData;
         }
@@ -328,8 +387,10 @@ public class ClientWorker implements Closeable {
         final String dataId = cacheData.dataId;
         final String group = cacheData.group;
         final String tenant = cacheData.tenant;
+
+       // 当文件系统指定路径下的failover配置文件存在时，就会优先使用failover配置文件；当failover配置文件被删除时，又会切换为使用server端配置
         File path = LocalConfigInfoProcessor.getFailoverFile(agent.getName(), dataId, group, tenant);
-        // 当isUseLocalConfigInfo=false（不使用failover配置文件） 且 failover配置文件存在时，使用failover配置文件，并更新内存中的配置
+        // 当isUseLocalConfigInfo=false（使用failover配置文件） 且 failover配置文件存在时，使用failover配置文件，并更新内存中的配置
         if (!cacheData.isUseLocalConfigInfo() && path.exists()) {
             String content = LocalConfigInfoProcessor.getFailover(agent.getName(), dataId, group, tenant);
             final String md5 = MD5Utils.md5Hex(content, Constants.ENCODE);
@@ -342,7 +403,7 @@ public class ClientWorker implements Closeable {
                     agent.getName(), dataId, group, tenant, md5, ContentUtils.truncateContent(content));
             return;
         }
-        // 当isUseLocalConfigInfo=true 或 failover配置文件不存在时，不使用failover配置文件
+        // 当isUseLocalConfigInfo=true 且 failover配置文件不存在时，不使用failover配置文件
         // If use local config info, then it doesn't notify business listener and notify after getting from server.
         if (cacheData.isUseLocalConfigInfo() && !path.exists()) {
             cacheData.setUseLocalConfigInfo(false);
@@ -352,7 +413,7 @@ public class ClientWorker implements Closeable {
         }
 
         // When it changed.
-        // 当isUseLocalConfigInfo=true 且 failover配置文件存在时，使用failover配置文件并更新内存中的配置
+        // 当isUseLocalConfigInfo=true 且 failover配置文件存在时 并且 记录failover配置文件的上次更新时间戳不等于当前failover配置文件的时间，使用failover配置文件并更新内存中的配置
         if (cacheData.isUseLocalConfigInfo() && path.exists() && cacheData.getLocalConfigInfoVersion() != path
                 .lastModified()) {
             String content = LocalConfigInfoProcessor.getFailover(agent.getName(), dataId, group, tenant);
@@ -380,6 +441,11 @@ public class ClientWorker implements Closeable {
         // Round up the longingTaskCount.
         // cacheMap大小 / 3000 向上取整
         int longingTaskCount = (int) Math.ceil(listenerSize / ParamUtil.getPerTaskConfigSize());
+
+        /**
+         * 一个长轮询任务处理3000个listener，listener监听的是某个dataId的某个group
+         * 每个listener在添加到cacheMap之前会计算所属的taskId
+         */
         // 计算longingTaskCount 大于 当前实际长轮询任务数量
         if (longingTaskCount > currentLongingTaskCount) {
 
@@ -535,64 +601,6 @@ public class ClientWorker implements Closeable {
         return updateList;
     }
 
-    @SuppressWarnings("PMD.ThreadPoolCreationRule")
-    public ClientWorker(final HttpAgent agent, final ConfigFilterChainManager configFilterChainManager,
-            final Properties properties) {
-        this.agent = agent;
-        this.configFilterChainManager = configFilterChainManager;
-
-        // Initialize the timeout parameter
-        // 初始化一些参数，如：timeout
-        init(properties);
-        // 单线程执行器
-        this.executor = Executors.newScheduledThreadPool(1, new ThreadFactory() {
-            @Override
-            public Thread newThread(Runnable r) {
-                Thread t = new Thread(r);
-                t.setName("com.alibaba.nacos.client.Worker." + agent.getName());
-                t.setDaemon(true);
-                return t;
-            }
-        });
-        // 执行LongPollingRunnable的执行器，固定线程数=核数
-        this.executorService = Executors
-                .newScheduledThreadPool(Runtime.getRuntime().availableProcessors(), new ThreadFactory() {
-                    @Override
-                    public Thread newThread(Runnable r) {
-                        Thread t = new Thread(r);
-                        t.setName("com.alibaba.nacos.client.Worker.longPolling." + agent.getName());
-                        t.setDaemon(true);
-                        return t;
-                    }
-                });
-
-
-        this.executor.scheduleWithFixedDelay(new Runnable() {
-            @Override
-            public void run() {
-                try {
-                    /**  10ms执行一次
-                     * 负责检测当前情况（cacheMap大小及当前已经提交的长轮询任务数），是否需要提交新的长轮询任务到executorService中，固定线程数=1。
-                     */
-                    checkConfigInfo();
-                } catch (Throwable e) {
-                    LOGGER.error("[" + agent.getName() + "] [sub-check] rotate check error", e);
-                }
-            }
-        }, 1L, 10L, TimeUnit.MILLISECONDS);
-    }
-
-    private void init(Properties properties) {
-
-        timeout = Math.max(ConvertUtils.toInt(properties.getProperty(PropertyKeyConst.CONFIG_LONG_POLL_TIMEOUT),
-                Constants.CONFIG_LONG_POLL_TIMEOUT), Constants.MIN_CONFIG_LONG_POLL_TIMEOUT);
-
-        taskPenaltyTime = ConvertUtils
-                .toInt(properties.getProperty(PropertyKeyConst.CONFIG_RETRY_TIME), Constants.CONFIG_RETRY_TIME);
-
-        this.enableRemoteSyncConfig = Boolean
-                .parseBoolean(properties.getProperty(PropertyKeyConst.ENABLE_REMOTE_SYNC_CONFIG));
-    }
 
     @Override
     public void shutdown() throws NacosException {
@@ -613,7 +621,7 @@ public class ClientWorker implements Closeable {
 
         /**
          * 1、处理failover配置：判断当前CacheData是否使用failover配置（ClientWorker.checkLocalConfig），如果使用failover配置，则校验本地配置文件内容是否发生变化，发生变化则触发监听器（CacheData.checkListenerMd5）。这一步其实和长轮询无关。
-         * 2、对于所有非failover配置，执行长轮询，返回发生改变的groupKey（ClientWorker.checkUpdateDataIds）。
+         * 2、对于所有非failover配置，执行长轮询（服务端会hold住请求），返回发生改变的groupKey（ClientWorker.checkUpdateDataIds）。
          * 3、根据返回的groupKey，查询服务端实时配置并保存snapshot（ClientWorker.getServerConfig）
          * 4、更新内存CacheData的配置content。
          * 5、校验配置是否发生变更，通知监听器（CacheData.checkListenerMd5）。

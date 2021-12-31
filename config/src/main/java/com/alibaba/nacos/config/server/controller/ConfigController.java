@@ -172,8 +172,9 @@ public class ConfigController {
         if (StringUtils.isBlank(betaIps)) {
             if (StringUtils.isBlank(tag)) {
                 // 更新数据库配置
-                //ExternalStoragePersistServiceImpl.insertOrUpdate()      nacos.standalone = false   集群
-                //EmbeddedStoragePersistServiceImpl.insertOrUpdate()      nacos.standalone = true 单机
+                //ExternalStoragePersistServiceImpl.insertOrUpdate()      nacos.standalone = true 单机
+                //EmbeddedStoragePersistServiceImpl.insertOrUpdate()      nacos.standalone = false   集群
+                System.out.println(System.getProperty("nacos.standalone"));
                 persistService.insertOrUpdate(srcIp, srcUser, configInfo, time, configAdvanceInfo, true);
                 /**
                  * 发布ConfigDataChangeEvent事件  ConfigDataChangeEvent的订阅者是AsyncNotifyService
@@ -325,7 +326,7 @@ public class ConfigController {
 
     /**
      * The client listens for configuration changes.
-     *  配置监听，是长轮询服务端的逻辑
+     *  配置监听，是长轮询服务端的逻辑   ClientWorker.LongPollingRunnable#run()中请求本接口
      *  1、先校验客户端配置项md5与服务端内存中缓存的md5是否一致，不一致直接拼接结果返回，这里返回的是发生变化的groupKey，由客户端发起二次请求/v1/cs/configs查询最新配置。
      *  2、如果客户端配置项md5已经最新，请求头中包含Long-Pulling-Timeout-No-Hangup=true，则立即返回200。
      *  3、如果不满足上述两点，开启AsyncContext，并提交一个ClientLongPolling任务等待配置发生变更后，响应客户端。

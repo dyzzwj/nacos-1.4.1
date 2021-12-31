@@ -25,7 +25,7 @@ import java.util.Map;
 
 /**
  * Cache item.
- * 在Nacos服务端对应一个配置文件，缓存了配置的md5，持有一把读写锁控制访问冲突。
+ * 在Nacos服务端对应一个配置文件，缓存了配置的md5（并没有保存具体的配置数据），持有一把读写锁控制访问冲突。
  * @author Nacos
  */
 public class CacheItem {

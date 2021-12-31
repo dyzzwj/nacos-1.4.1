@@ -183,7 +183,7 @@ public class ConfigServletInner {
                                     lastModified = cacheItem.tagLastModifiedTs.get(autoTag);
                                 }
                             }
-                            // 如果单机部署且使用derby数据源，查询实时配置 数据库
+                            // 如果单机部署且使用derby数据源，实时查询derby数据库
                             if (PropertyUtil.isDirectRead()) {
                                 configInfoBase = persistService.findConfigInfo4Tag(dataId, group, tenant, autoTag);
                             } else {
