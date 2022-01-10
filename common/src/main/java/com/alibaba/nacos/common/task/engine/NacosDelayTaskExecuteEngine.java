@@ -39,6 +39,8 @@ public class NacosDelayTaskExecuteEngine extends AbstractNacosTaskExecuteEngine<
 
     private final ScheduledExecutorService processingExecutor;
 
+
+    //processTasks()方法中处理tasks
     protected final ConcurrentHashMap<Object, AbstractDelayTask> tasks;
 
     protected final ReentrantLock lock = new ReentrantLock();

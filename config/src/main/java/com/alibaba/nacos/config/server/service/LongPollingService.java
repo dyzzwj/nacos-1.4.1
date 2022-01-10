@@ -348,7 +348,7 @@ public class LongPollingService {
     class DataChangeTask implements Runnable {
 
         /**
-         * 比较内存中的配置md5和LocalDataChangeEvent中配置的md5，响应所有订阅这个groupKey配置的客户端。
+         * 循环所有对当前nacos服务端发起长轮询请求的客户端,比较内存中的配置md5和LocalDataChangeEvent中配置的md5，响应所有订阅这个groupKey配置的客户端。
          * 基于单个配置的事件传播，最终响应客户端时，只会告诉客户端一个groupKey的变更
          */
         @Override
@@ -452,10 +452,11 @@ public class LongPollingService {
                             if (changedGroups.size() > 0) {
                                 sendResponse(changedGroups);
                             } else {
-                                // 2. 普通长轮询（默认），代表超时没有配置变更，响应客户端空数据
+
                                 sendResponse(null);
                             }
                         } else {
+                            // 2. 普通长轮询（默认），代表超时没有配置变更，响应客户端空数据
                             LogUtil.CLIENT_LOG
                                     .info("{}|{}|{}|{}|{}|{}", (System.currentTimeMillis() - createTime), "timeout",
                                             RequestUtil.getRemoteIp((HttpServletRequest) asyncContext.getRequest()),

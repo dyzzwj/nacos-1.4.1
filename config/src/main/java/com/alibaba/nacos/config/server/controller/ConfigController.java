@@ -173,8 +173,9 @@ public class ConfigController {
             if (StringUtils.isBlank(tag)) {
                 // 更新数据库配置
                 //ExternalStoragePersistServiceImpl.insertOrUpdate()      nacos.standalone = true 单机
-                //EmbeddedStoragePersistServiceImpl.insertOrUpdate()      nacos.standalone = false   集群
+                //EmbeddedStoragePersistServiceImpl.insertOrUpdate()      nacos.standalone = false   集群 集群模式需要进行数据同步
                 System.out.println(System.getProperty("nacos.standalone"));
+
                 persistService.insertOrUpdate(srcIp, srcUser, configInfo, time, configAdvanceInfo, true);
                 /**
                  * 发布ConfigDataChangeEvent事件  ConfigDataChangeEvent的订阅者是AsyncNotifyService

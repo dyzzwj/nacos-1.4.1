@@ -101,14 +101,15 @@ public class ConfigCacheService {
         }
 
         try {
-            // 计算新配置的md5
+            // 计算新的配置的md5
             final String md5 = MD5Utils.md5Hex(content, Constants.ENCODE);
             // 比较新md5与内存中配置的md5是否一致
             if (md5.equals(ConfigCacheService.getContentMd5(groupKey))) {
                 DUMP_LOG.warn("[dump-ignore] ignore to save cache file. groupKey={}, md5={}, lastModifiedOld={}, "
                                 + "lastModifiedNew={}", groupKey, md5, ConfigCacheService.getLastModifiedTs(groupKey),
                         lastModifiedTs);
-            } else if (!PropertyUtil.isDirectRead()) {
+
+            } else if (!PropertyUtil.isDirectRead()) {//不是单机或不是嵌入式数据源
                 // 如果使用mysql数据库，这里会保存配置文件到磁盘上，供之后读取
                 DiskUtil.saveToDisk(dataId, group, tenant, content);
             }

@@ -62,7 +62,7 @@ public class AsyncNotifyService {
         this.memberManager = memberManager;
 
         // Register ConfigDataChangeEvent to NotifyCenter.
-        NotifyCenter.registerToPublisher(ConfigDataChangeEvent.class, NotifyCenter.ringBufferSize);
+        NotifyCenter.registerToPublisher(AsyncNotifyService.class, NotifyCenter.ringBufferSize);
 
         // Register A Subscriber to subscribe ConfigDataChangeEvent.
         NotifyCenter.registerSubscriber(new Subscriber() {
