@@ -54,18 +54,18 @@ import java.util.concurrent.TimeUnit;
 @RestController
 @RequestMapping(Commons.NACOS_CORE_CONTEXT + "/cluster")
 public class NacosClusterController {
-    
+
     private final ServerMemberManager memberManager;
-    
+
     public NacosClusterController(ServerMemberManager memberManager) {
         this.memberManager = memberManager;
     }
-    
+
     @GetMapping(value = "/self")
     public RestResult<Member> self() {
         return RestResultUtils.success(memberManager.getSelf());
     }
-    
+
     /**
      * The console displays the list of cluster members.
      *
@@ -77,7 +77,7 @@ public class NacosClusterController {
             @RequestParam(value = "keyword", required = false) String ipKeyWord) {
         Collection<Member> members = memberManager.allMembers();
         Collection<Member> result = new ArrayList<>();
-        
+
         members.stream().sorted().forEach(member -> {
             if (StringUtils.isBlank(ipKeyWord)) {
                 result.add(member);
@@ -88,23 +88,23 @@ public class NacosClusterController {
                 result.add(member);
             }
         });
-        
+
         return RestResultUtils.success(result);
     }
-    
+
     // The client can get all the nacos node information in the current
     // cluster according to this interface
-    
+
     @GetMapping(value = "/simple/nodes")
     public RestResult<Collection<String>> listSimpleNodes() {
         return RestResultUtils.success(memberManager.getMemberAddressInfos());
     }
-    
+
     @GetMapping("/health")
     public RestResult<String> getHealth() {
         return RestResultUtils.success(memberManager.getSelf().getState().name());
     }
-    
+
     /**
      * Other nodes return their own metadata information.
      *
@@ -119,12 +119,13 @@ public class NacosClusterController {
         LoggerUtils.printIfDebugEnabled(Loggers.CLUSTER, "node state report, receive info : {}", node);
         node.setState(NodeState.UP);
         node.setFailAccessCnt(0);
-        
+        //更新serverList中的Member信息，并发布MembersChangeEvent事件
+        //这个健康检查是双向的，无论请求节点还是响应节点，都会更新内存中的集群节点状态。
         boolean result = memberManager.update(node);
-        
+
         return RestResultUtils.success(Boolean.toString(result));
     }
-    
+
     /**
      * Addressing mode switch.
      *
@@ -140,7 +141,7 @@ public class NacosClusterController {
             return RestResultUtils.failed(ex.getMessage());
         }
     }
-    
+
     /**
      * member leave.
      *
@@ -180,7 +181,7 @@ public class NacosClusterController {
                         latch.countDown();
                     }
                 }
-                
+
                 @Override
                 public void onError(Throwable throwable) {
                     try {
@@ -190,14 +191,14 @@ public class NacosClusterController {
                         latch.countDown();
                     }
                 }
-    
+
                 @Override
                 public void onCancel() {
-        
+
                 }
             });
         }
-        
+
         try {
             latch.await(10_000, TimeUnit.MILLISECONDS);
             return RestResultUtils.success("ok");
@@ -205,5 +206,5 @@ public class NacosClusterController {
             return RestResultUtils.failed(ex.getMessage());
         }
     }
-    
+
 }

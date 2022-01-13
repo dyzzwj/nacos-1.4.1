@@ -50,6 +50,7 @@ public class BeatReactor implements Closeable {
     // 命名服务代理
     private final NamingProxy serverProxy;
 
+    // 向服务端发送心跳报文，是否需要包含所有BeatInfo信息
     private boolean lightBeatEnabled = false;
 
     public final Map<String, BeatInfo> dom2Beat = new ConcurrentHashMap<String, BeatInfo>();
@@ -204,7 +205,7 @@ public class BeatReactor implements Closeable {
                     instance.setInstanceId(instance.getInstanceId());
                     instance.setEphemeral(true);
                     try {
-                        // 4. 提交下一次心跳任务
+
                         serverProxy.registerService(beatInfo.getServiceName(),
                                 NamingUtils.getGroupName(beatInfo.getServiceName()), instance);
                     } catch (Exception ignore) {
@@ -215,6 +216,7 @@ public class BeatReactor implements Closeable {
                         JacksonUtils.toJson(beatInfo), ex.getErrCode(), ex.getErrMsg());
 
             }
+            // 4. 提交下一次心跳任务
             executorService.schedule(new BeatTask(beatInfo), nextTime, TimeUnit.MILLISECONDS);
         }
     }

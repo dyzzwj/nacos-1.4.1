@@ -74,6 +74,10 @@ import java.util.concurrent.ConcurrentSkipListMap;
  * ServerMemberManager#initAndStartLookup()} Initializes the addressing mode
  *
  * @author <a href="mailto:liaochuntao@live.com">liaochuntao</a>
+ *
+ *
+ * naocs集群管理
+ *
  */
 @Component(value = "serverMemberManager")
 public class ServerMemberManager implements ApplicationListener<WebServerInitializedEvent> {
@@ -110,6 +114,7 @@ public class ServerMemberManager implements ApplicationListener<WebServerInitial
 
     /**
      * self member obj.
+     * 当前nacos节点
      */
     private volatile Member self;
 
@@ -129,6 +134,7 @@ public class ServerMemberManager implements ApplicationListener<WebServerInitial
         this.serverList = new ConcurrentSkipListMap<>();
         EnvUtil.setContextPath(servletContext.getContextPath());
 
+        //集群初始化
         init();
     }
 
@@ -141,9 +147,10 @@ public class ServerMemberManager implements ApplicationListener<WebServerInitial
         serverList.put(self.getAddress(), self);
 
         // register NodeChangeEvent publisher to NotifyManager
+        //注册集群变更通知监听器
         registerClusterEvent();
 
-        // Initializes the lookup mode
+        //初始化集群列表
         initAndStartLookup();
 
         if (serverList.isEmpty()) {
@@ -154,6 +161,7 @@ public class ServerMemberManager implements ApplicationListener<WebServerInitial
     }
 
     private void initAndStartLookup() throws NacosException {
+        //根据配置决定lookup实现类
         this.lookup = LookupFactory.createLookUp(this);
         this.lookup.start();
     }
@@ -204,7 +212,9 @@ public class ServerMemberManager implements ApplicationListener<WebServerInitial
     public boolean update(Member newMember) {
         Loggers.CLUSTER.debug("member information update : {}", newMember);
 
+        //ip + port
         String address = newMember.getAddress();
+        // 不在配置文件中的member不会加入集群
         if (!serverList.containsKey(address)) {
             return false;
         }
@@ -319,7 +329,7 @@ public class ServerMemberManager implements ApplicationListener<WebServerInitial
                 tmpAddressInfo.add(address);
             }
         }
-
+        //更新内存中的nacos节点列表
         serverList = tmpMap;
         memberAddressInfos = tmpAddressInfo;
 
@@ -333,6 +343,7 @@ public class ServerMemberManager implements ApplicationListener<WebServerInitial
         if (hasChange) {
             MemberUtil.syncToFile(finalMembers);
             Event event = MembersChangeEvent.builder().members(finalMembers).build();
+            //发布MembersChangeEvent事件。
             NotifyCenter.publishEvent(event);
         }
 
@@ -381,10 +392,15 @@ public class ServerMemberManager implements ApplicationListener<WebServerInitial
         return Objects.equals(serverList.firstKey(), this.localAddress);
     }
 
+    /**
+     * Tomcat启动后会发布WebServerInitializedEvent事件
+     * @param event
+     */
     @Override
     public void onApplicationEvent(WebServerInitializedEvent event) {
         getSelf().setState(NodeState.UP);
         if (!EnvUtil.getStandaloneMode()) {
+            //集群模式 开启一个MemberInfoReportTask当前节点信息广播任务。
             GlobalExecutor.scheduleByCommon(this.infoReportTask, 5_000L);
         }
         EnvUtil.setPort(event.getWebServer().getPort());
@@ -444,21 +460,21 @@ public class ServerMemberManager implements ApplicationListener<WebServerInitial
 
         @Override
         protected void executeBody() {
+            // 获取除当前节点以外其他所有节点，包含down的
             List<Member> members = ServerMemberManager.this.allMembersWithoutSelf();
 
             if (members.isEmpty()) {
                 return;
             }
-
+            // 轮询选择
             this.cursor = (this.cursor + 1) % members.size();
             Member target = members.get(cursor);
 
             Loggers.CLUSTER.debug("report the metadata to the node : {}", target.getAddress());
-
             final String url = HttpUtils
                     .buildUrl(false, target.getAddress(), EnvUtil.getContextPath(), Commons.NACOS_CORE_CONTEXT,
                             "/cluster/report");
-
+            //执行POST /v1/core/cluster/report，向集群随机节点（包含DOWN）发送当前节点信息（Member），一方面是为了同步当前节点信息，另一方面也是健康检查
             try {
                 asyncRestTemplate
                         .post(url, Header.newInstance().addParam(Constants.NACOS_SERVER_HEADER, VersionUtils.version),
@@ -473,8 +489,10 @@ public class ServerMemberManager implements ApplicationListener<WebServerInitial
                                             return;
                                         }
                                         if (result.ok()) {
+                                            //业务成功
                                             MemberUtil.onSuccess(ServerMemberManager.this, target);
                                         } else {
+                                            //业务失败
                                             Loggers.CLUSTER
                                                     .warn("failed to report new info to target node : {}, result : {}",
                                                             target.getAddress(), result);
@@ -484,6 +502,7 @@ public class ServerMemberManager implements ApplicationListener<WebServerInitial
 
                                     @Override
                                     public void onError(Throwable throwable) {
+                                        //通讯失败
                                         Loggers.CLUSTER
                                                 .error("failed to report new info to target node : {}, error : {}",
                                                         target.getAddress(),
@@ -502,6 +521,7 @@ public class ServerMemberManager implements ApplicationListener<WebServerInitial
             }
         }
 
+        //每2s执行一次
         @Override
         protected void after() {
             GlobalExecutor.scheduleByCommon(this, 2_000L);

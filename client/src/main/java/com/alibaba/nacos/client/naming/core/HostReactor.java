@@ -346,7 +346,7 @@ public class HostReactor implements Closeable {
                 }
             }
         }
-        // 3. 提交一个任务，定时更新serviceInfo
+        // 3. 提交一个任务，定时更新serviceInfo 当查询时futureMap中不存在对应service的更新任务Future，提交一个任务用于更新service对应注册表。
         scheduleUpdateIfAbsent(serviceName, clusters);
         // 4. 返回内存map中的serviceInfo
         return serviceInfoMap.get(serviceObj.getKey());
@@ -367,6 +367,7 @@ public class HostReactor implements Closeable {
      * @param clusters    clusters
      */
     public void scheduleUpdateIfAbsent(String serviceName, String clusters) {
+        //当查询时futureMap中不存在对应service的更新任务Future，提交一个任务用于更新service对应注册表。
         if (futureMap.get(ServiceInfo.getKey(serviceName, clusters)) != null) {
             return;
         }

@@ -127,6 +127,7 @@ public class NamingProxy implements Closeable {
                 this.nacosDomain = serverList;
             }
         }
+        //
         this.initRefreshTask();
     }
 
@@ -142,6 +143,7 @@ public class NamingProxy implements Closeable {
             }
         });
 
+        //定时刷新nacos server列表
         this.executorService.scheduleWithFixedDelay(new Runnable() {
             @Override
             public void run() {
@@ -200,6 +202,7 @@ public class NamingProxy implements Closeable {
                 return;
             }
 
+            //从endpoint获取nacos server地址
             List<String> list = getServerListFromEndpoint();
 
             if (CollectionUtils.isEmpty(list)) {
@@ -226,7 +229,7 @@ public class NamingProxy implements Closeable {
      * @throws NacosException nacos exception
      */
     public void registerService(String serviceName, String groupName, Instance instance) throws NacosException {
-        //注意入参serviceName = Nacos服务名 = groupName + @@ + serviceName。
+        //注意入参：serviceName = Nacos服务名 = groupName + @@ + serviceName。
         NAMING_LOGGER.info("[REGISTER-SERVICE] {} registering service {} with instance: {}", namespaceId, serviceName,
                 instance);
 

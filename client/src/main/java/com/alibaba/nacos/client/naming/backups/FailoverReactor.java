@@ -150,6 +150,7 @@ public class FailoverReactor implements Closeable {
                 //SwitchRefresher根据cacheDir路径下00-00---000-VIPSRV_FAILOVER_SWITCH-000---00-00文件内容判断是否开启failover，文件内容1表示开启0表示关闭
                 File switchFile = new File(failoverDir + UtilAndComs.FAILOVER_SWITCH);
                 if (!switchFile.exists()) {
+                    //文件不存在 默认关闭
                     switchParams.put("failover-mode", "false");
                     NAMING_LOGGER.debug("failover switch is not found, " + switchFile.getName());
                     return;

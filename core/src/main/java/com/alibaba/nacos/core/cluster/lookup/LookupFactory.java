@@ -33,14 +33,14 @@ import java.util.Objects;
  * @author <a href="mailto:liaochuntao@live.com">liaochuntao</a>
  */
 public final class LookupFactory {
-    
+
     private static final String LOOKUP_MODE_TYPE = "nacos.core.member.lookup.type";
-    
+
     @SuppressWarnings("checkstyle:StaticVariableName")
     private static MemberLookup LOOK_UP = null;
-    
+
     private static LookupType currentLookupType = null;
-    
+
     /**
      * Create the target addressing pattern.
      *
@@ -51,17 +51,20 @@ public final class LookupFactory {
     public static MemberLookup createLookUp(ServerMemberManager memberManager) throws NacosException {
         if (!EnvUtil.getStandaloneMode()) {
             String lookupType = EnvUtil.getProperty(LOOKUP_MODE_TYPE);
+            //选择lookup类型
             LookupType type = chooseLookup(lookupType);
+
             LOOK_UP = find(type);
             currentLookupType = type;
         } else {
+            //当节点以standalone形式启动，直接取自身作为集群列表。
             LOOK_UP = new StandaloneMemberLookup();
         }
         LOOK_UP.injectMemberManager(memberManager);
         Loggers.CLUSTER.info("Current addressing mode selection : {}", LOOK_UP.getClass().getSimpleName());
         return LOOK_UP;
     }
-    
+
     /**
      * Switch to target addressing mode.
      *
@@ -72,13 +75,13 @@ public final class LookupFactory {
      */
     public static MemberLookup switchLookup(String name, ServerMemberManager memberManager) throws NacosException {
         LookupType lookupType = LookupType.sourceOf(name);
-        
+
         if (Objects.isNull(lookupType)) {
             throw new IllegalArgumentException(
                     "The addressing mode exists : " + name + ", just support : [" + Arrays.toString(LookupType.values())
                             + "]");
         }
-        
+
         if (Objects.equals(currentLookupType, lookupType)) {
             return LOOK_UP;
         }
@@ -92,20 +95,22 @@ public final class LookupFactory {
         Loggers.CLUSTER.info("Current addressing mode selection : {}", LOOK_UP.getClass().getSimpleName());
         return LOOK_UP;
     }
-    
+
     private static MemberLookup find(LookupType type) {
         if (LookupType.FILE_CONFIG.equals(type)) {
+            //取nacos.home/conf/cluster.conf配置文件中的内容作为集群列表
             LOOK_UP = new FileConfigMemberLookup();
             return LOOK_UP;
         }
         if (LookupType.ADDRESS_SERVER.equals(type)) {
+            //使用外部地址服务，为nacos集群提供服务发现能力，初始化集群列表。请求http://{address.server.domain}:{address.server.port}/{address_server_url}获取cluster.conf。
             LOOK_UP = new AddressServerMemberLookup();
             return LOOK_UP;
         }
         // unpossible to run here
         throw new IllegalArgumentException();
     }
-    
+
     private static LookupType chooseLookup(String lookupType) {
         if (StringUtils.isNotBlank(lookupType)) {
             LookupType type = LookupType.sourceOf(lookupType);
@@ -114,41 +119,43 @@ public final class LookupFactory {
             }
         }
         File file = new File(EnvUtil.getClusterConfFilePath());
+        //取nacos.home/conf/cluster.conf配置文件中的内容作为集群列表
         if (file.exists() || StringUtils.isNotBlank(EnvUtil.getMemberList())) {
             return LookupType.FILE_CONFIG;
         }
+        //使用外部地址服务，为nacos集群提供服务发现能力，初始化集群列表。请求http://{address.server.domain}:{address.server.port}/{address_server_url}获取cluster.conf。
         return LookupType.ADDRESS_SERVER;
     }
-    
+
     public static MemberLookup getLookUp() {
         return LOOK_UP;
     }
-    
+
     public static void destroy() throws NacosException {
         Objects.requireNonNull(LOOK_UP).destroy();
     }
-    
+
     public enum LookupType {
-        
+
         /**
          * File addressing mode.
          */
         FILE_CONFIG(1, "file"),
-        
+
         /**
          * Address server addressing mode.
          */
         ADDRESS_SERVER(2, "address-server");
-        
+
         private final int code;
-        
+
         private final String name;
-        
+
         LookupType(int code, String name) {
             this.code = code;
             this.name = name;
         }
-        
+
         /**
          * find one {@link LookupType} by name, if not found, return null.
          *
@@ -163,19 +170,19 @@ public final class LookupFactory {
             }
             return null;
         }
-        
+
         public int getCode() {
             return code;
         }
-        
+
         public String getName() {
             return name;
         }
-        
+
         @Override
         public String toString() {
             return name;
         }
     }
-    
+
 }

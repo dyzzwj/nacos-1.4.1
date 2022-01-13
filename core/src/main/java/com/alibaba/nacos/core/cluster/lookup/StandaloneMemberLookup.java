@@ -25,11 +25,11 @@ import java.util.Collections;
 
 /**
  * Member node addressing mode in stand-alone mode.
- *
+ *  当节点以standalone形式启动，直接取自身作为集群列表。
  * @author <a href="mailto:liaochuntao@live.com">liaochuntao</a>
  */
 public class StandaloneMemberLookup extends AbstractMemberLookup {
-    
+
     @Override
     public void start() {
         if (start.compareAndSet(false, true)) {

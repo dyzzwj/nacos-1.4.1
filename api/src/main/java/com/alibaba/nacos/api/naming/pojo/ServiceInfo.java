@@ -41,6 +41,8 @@ public class ServiceInfo {
 
     public static final String SPLITER = "@@";
 
+    //namespace信息在NacosNamingService中
+
     //服务名
     private String name;
 

@@ -27,23 +27,24 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * @author <a href="mailto:liaochuntao@live.com">liaochuntao</a>
  */
 public abstract class AbstractMemberLookup implements MemberLookup {
-    
+
     protected ServerMemberManager memberManager;
-    
+
     protected AtomicBoolean start = new AtomicBoolean(false);
-    
+
     @Override
     public void injectMemberManager(ServerMemberManager memberManager) {
         this.memberManager = memberManager;
     }
-    
+
     @Override
     public void afterLookup(Collection<Member> members) {
+        //更新内存中的nacos节点列表，发布MembersChangeEvent事件。
         this.memberManager.memberChange(members);
     }
-    
+
     @Override
     public void destroy() throws NacosException {
-    
+
     }
 }
