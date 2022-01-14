@@ -223,10 +223,12 @@ public class ServerMemberManager implements ApplicationListener<WebServerInitial
             if (NodeState.DOWN.equals(newMember.getState())) {
                 memberAddressInfos.remove(newMember.getAddress());
             }
+            //如果基本信息发生变化
             boolean isPublishChangeEvent = MemberUtil.isBasicInfoChanged(newMember, member);
             newMember.setExtendVal(MemberMetaDataConstants.LAST_REFRESH_TIME, System.currentTimeMillis());
             MemberUtil.copy(newMember, member);
             if (isPublishChangeEvent) {
+                //发布MembersChangeEvent事件
                 // member basic data changes and all listeners need to be notified
                 notifyMemberChange();
             }

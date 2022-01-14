@@ -465,9 +465,10 @@ public class ServiceManager implements RecordListener<Service> {
      */
     public void createServiceIfAbsent(String namespaceId, String serviceName, boolean local, Cluster cluster)
             throws NacosException {
+        // namespace - groupName@@serviceName - Service
         Service service = getService(namespaceId, serviceName);
         if (service == null) {
-
+            //该service首个instance注册
             Loggers.SRV_LOG.info("creating empty service {}:{}", namespaceId, serviceName);
             service = new Service();
             service.setName(serviceName);
@@ -482,7 +483,12 @@ public class ServiceManager implements RecordListener<Service> {
             }
             service.validate();
 
+            /**
+             * 这里主要是将service写入serviceMap（内部还没有Instance），执行Service的init方法开启服务对应客户端心跳检测，
+             * 最后ConsistencyService同时监听了这个服务的临时和非临时节点
+             */
             putServiceAndInit(service);
+            // 持久节点，持久化Service；临时节点不会持久化Service
             if (!local) {
                 addOrReplaceService(service);
             }
@@ -501,15 +507,16 @@ public class ServiceManager implements RecordListener<Service> {
      */
     public void registerInstance(String namespaceId, String serviceName, Instance instance) throws NacosException {
 
+        // 1. 如果首次注册，才会执行，创建Service，放入ServiceManager管理
         createEmptyService(namespaceId, serviceName, instance.isEphemeral());
-
+        // 获取Service实例
         Service service = getService(namespaceId, serviceName);
 
         if (service == null) {
             throw new NacosException(NacosException.INVALID_PARAM,
                     "service not found, namespace: " + namespaceId + ", service: " + serviceName);
         }
-
+        // 2. 把Instance加入Service
         addInstance(namespaceId, serviceName, instance.isEphemeral(), instance);
     }
 
@@ -651,11 +658,18 @@ public class ServiceManager implements RecordListener<Service> {
         Service service = getService(namespaceId, serviceName);
 
         synchronized (service) {
+            // 从底层存储获取当前Instance列表，将新加入的Instance加入并返回
             List<Instance> instanceList = addIpAddresses(service, ephemeral, ips);
 
             Instances instances = new Instances();
             instances.setInstanceList(instanceList);
+            /**
+             *  AP 临时节点 - DistroConsistencyServiceImpl#put()
+             *  CP 持久节点 - PersistentServiceProcessor#put()
+             */
 
+            // 写入底层存储
+            //DelegateConsistencyServiceImpl.put
             consistencyService.put(key, instances);
         }
     }
@@ -855,6 +869,7 @@ public class ServiceManager implements RecordListener<Service> {
         return instanceMap;
     }
 
+    // namespace - groupName@@serviceName - Service
     public Service getService(String namespaceId, String serviceName) {
         if (serviceMap.get(namespaceId) == null) {
             return null;
@@ -883,8 +898,11 @@ public class ServiceManager implements RecordListener<Service> {
     }
 
     private void putServiceAndInit(Service service) throws NacosException {
+        // 1. 写入serviceMap内存
         putService(service);
+        // 2. 开启客户端心跳检测
         service.init();
+        // 3. 监听
         consistencyService
                 .listen(KeyBuilder.buildInstanceListKey(service.getNamespaceId(), service.getName(), true), service);
         consistencyService

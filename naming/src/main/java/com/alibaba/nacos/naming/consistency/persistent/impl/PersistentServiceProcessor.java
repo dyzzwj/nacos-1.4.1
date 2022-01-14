@@ -42,26 +42,26 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 /**
- * In cluster mode, start the Raft protocol.
- *
+ * In clus ter mode, start the Raft protocol.
+ *  基于JRaft实现的一致性服务
  * @author <a href="mailto:liaochuntao@live.com">liaochuntao</a>
  */
 @SuppressWarnings("PMD.ServiceOrDaoClassShouldEndWithImplRule")
 public class PersistentServiceProcessor extends BasePersistentServiceProcessor {
-    
+
     private final CPProtocol protocol;
-    
+
     /**
      * Is there a leader node currently.
      */
     private volatile boolean hasLeader = false;
-    
+
     public PersistentServiceProcessor(ProtocolManager protocolManager, ClusterVersionJudgement versionJudgement)
             throws Exception {
         super(versionJudgement);
         this.protocol = protocolManager.getCpProtocol();
     }
-    
+
     @Override
     public void afterConstruct() {
         super.afterConstruct();
@@ -76,7 +76,7 @@ public class PersistentServiceProcessor extends BasePersistentServiceProcessor {
             startNotify = true;
         }
     }
-    
+
     private void waitLeader() {
         while (!hasLeader && !hasError) {
             Loggers.RAFT.info("Waiting Jraft leader vote ...");
@@ -86,7 +86,7 @@ public class PersistentServiceProcessor extends BasePersistentServiceProcessor {
             }
         }
     }
-    
+
     @Override
     public void put(String key, Record value) throws NacosException {
         final BatchWriteRequest req = new BatchWriteRequest();
@@ -100,7 +100,7 @@ public class PersistentServiceProcessor extends BasePersistentServiceProcessor {
             throw new NacosException(ErrorCode.ProtoSubmitError.getCode(), e.getMessage());
         }
     }
-    
+
     @Override
     public void remove(String key) throws NacosException {
         final BatchWriteRequest req = new BatchWriteRequest();
@@ -113,7 +113,7 @@ public class PersistentServiceProcessor extends BasePersistentServiceProcessor {
             throw new NacosException(ErrorCode.ProtoSubmitError.getCode(), e.getMessage());
         }
     }
-    
+
     @Override
     public Datum get(String key) throws NacosException {
         final List<byte[]> keys = new ArrayList<>(1);
@@ -133,7 +133,7 @@ public class PersistentServiceProcessor extends BasePersistentServiceProcessor {
             throw new NacosException(ErrorCode.ProtoReadError.getCode(), e.getMessage());
         }
     }
-    
+
     @Override
     public void listen(String key, RecordListener listener) throws NacosException {
         notifier.registerListener(key, listener);
@@ -141,12 +141,12 @@ public class PersistentServiceProcessor extends BasePersistentServiceProcessor {
             notifierDatumIfAbsent(key, listener);
         }
     }
-    
+
     @Override
     public void unListen(String key, RecordListener listener) throws NacosException {
         notifier.deregisterListener(key, listener);
     }
-    
+
     @Override
     public boolean isAvailable() {
         return hasLeader && !hasError;

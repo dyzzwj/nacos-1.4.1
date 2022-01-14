@@ -199,6 +199,7 @@ public class Service extends com.alibaba.nacos.api.naming.pojo.Service implement
             }
         }
 
+        //更新
         updateIPs(value.getInstanceList(), KeyBuilder.matchEphemeralInstanceListKey(key));
 
         recalculateChecksum();
@@ -280,6 +281,9 @@ public class Service extends com.alibaba.nacos.api.naming.pojo.Service implement
         }
 
         setLastModifiedMillis(System.currentTimeMillis());
+        /**
+         *   UDP将Service变更推送给客户端
+         */
         getPushService().serviceChanged(this);
         StringBuilder stringBuilder = new StringBuilder();
 
