@@ -457,8 +457,9 @@ public class InstanceController {
     public ObjectNode beat(HttpServletRequest request) throws Exception {
 
         ObjectNode result = JacksonUtils.createEmptyJsonNode();
+        // 默认控制客户端心跳是5秒
         result.put(SwitchEntry.CLIENT_BEAT_INTERVAL, switchDomain.getClientBeatInterval());
-
+        // 从请求获取clientBeat,namespace,serviceName,clusterName...
         String beat = WebUtils.optional(request, "beat", StringUtils.EMPTY);
         RsInfo clientBeat = null;
         if (StringUtils.isNotBlank(beat)) {
@@ -483,8 +484,9 @@ public class InstanceController {
         NamingUtils.checkServiceNameFormat(serviceName);
         Loggers.SRV_LOG.debug("[CLIENT-BEAT] full arguments: beat: {}, serviceName: {}", clientBeat, serviceName);
         Instance instance = serviceManager.getInstance(namespaceId, serviceName, clusterName, ip, port);
-
+        // 1. 如果服务没注册，执行注册逻辑
         if (instance == null) {
+            // 如果lightBeatEnabled=true且发送心跳时客户端没有注册，需要客户端发起注册
             if (clientBeat == null) {
                 result.put(CommonParams.CODE, NamingResponseCode.RESOURCE_NOT_FOUND);
                 return result;
@@ -492,7 +494,7 @@ public class InstanceController {
 
             Loggers.SRV_LOG.warn("[CLIENT-BEAT] The instance has been removed for health mechanism, "
                     + "perform data compensation operations, beat: {}, serviceName: {}", clientBeat, serviceName);
-
+            // 服务端注册逻辑
             instance = new Instance();
             instance.setPort(clientBeat.getPort());
             instance.setIp(clientBeat.getIp());
@@ -518,12 +520,15 @@ public class InstanceController {
             clientBeat.setPort(port);
             clientBeat.setCluster(clusterName);
         }
+        // 2. 更新instance健康状态
         service.processClientBeat(clientBeat);
 
         result.put(CommonParams.CODE, NamingResponseCode.OK);
+        // 如果instance有设置心跳间隔preserved.heart.beat.interval，优先使用instance设置的心跳间隔
         if (instance.containsMetadata(PreservedMetadataKeys.HEART_BEAT_INTERVAL)) {
             result.put(SwitchEntry.CLIENT_BEAT_INTERVAL, instance.getInstanceHeartBeatInterval());
         }
+        // 服务端控制是否允许light beat, 默认true
         result.put(SwitchEntry.LIGHT_BEAT_ENABLED, switchDomain.isLightBeatEnabled());
         return result;
     }

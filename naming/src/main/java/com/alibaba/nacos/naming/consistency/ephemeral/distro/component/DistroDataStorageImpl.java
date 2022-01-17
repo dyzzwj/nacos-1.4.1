@@ -36,16 +36,16 @@ import java.util.Map;
  * @author xiweng.yy
  */
 public class DistroDataStorageImpl implements DistroDataStorage {
-    
+
     private final DataStore dataStore;
-    
+
     private final DistroMapper distroMapper;
-    
+
     public DistroDataStorageImpl(DataStore dataStore, DistroMapper distroMapper) {
         this.dataStore = dataStore;
         this.distroMapper = distroMapper;
     }
-    
+
     @Override
     public DistroData getDistroData(DistroKey distroKey) {
         Map<String, Datum> result = new HashMap<>(1);
@@ -58,7 +58,7 @@ public class DistroDataStorageImpl implements DistroDataStorage {
         byte[] dataContent = ApplicationUtils.getBean(Serializer.class).serialize(result);
         return new DistroData(distroKey, dataContent);
     }
-    
+
     @Override
     public DistroData getDatumSnapshot() {
         Map<String, Datum> result = dataStore.getDataMap();
@@ -66,7 +66,7 @@ public class DistroDataStorageImpl implements DistroDataStorage {
         DistroKey distroKey = new DistroKey("snapshot", KeyBuilder.INSTANCE_LIST_KEY_PREFIX);
         return new DistroData(distroKey, dataContent);
     }
-    
+
     @Override
     public DistroData getVerifyData() {
         Map<String, String> keyChecksums = new HashMap<>(64);
@@ -78,6 +78,7 @@ public class DistroDataStorageImpl implements DistroDataStorage {
             if (datum == null) {
                 continue;
             }
+            //key是服务标识 value的服务包含的Instance列表的摘要信息
             keyChecksums.put(key, datum.value.getChecksum());
         }
         if (keyChecksums.isEmpty()) {

@@ -56,7 +56,7 @@ import java.util.Map;
  * a list of instances.
  *
  * <p>his class inherits from Service in API module and stores some fields that do not have to expose to client.
- *
+ *    管理服务与Cluster集群的映射关系
  * @author nkorange
  */
 @JsonInclude(Include.NON_NULL)
@@ -300,6 +300,7 @@ public class Service extends com.alibaba.nacos.api.naming.pojo.Service implement
      * Init service.
      */
     public void init() {
+        //启动心跳检查定时任务
         HealthCheckReactor.scheduleCheck(clientBeatCheckTask);
         for (Map.Entry<String, Cluster> entry : clusterMap.entrySet()) {
             entry.getValue().setService(this);

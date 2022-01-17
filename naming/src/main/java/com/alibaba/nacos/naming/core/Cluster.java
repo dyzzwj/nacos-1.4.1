@@ -38,7 +38,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Cluster.
- *
+ *  Cluster管理其下面的持久/临时Instance列表
  * @author nkorange
  * @author jifengnan 2019-04-26
  */
@@ -147,6 +147,7 @@ public class Cluster extends com.alibaba.nacos.api.naming.pojo.Cluster implement
         if (inited) {
             return;
         }
+        //启动健康检查任务
         checkTask = new HealthCheckTask(this);
 
         HealthCheckReactor.scheduleCheck(checkTask);
