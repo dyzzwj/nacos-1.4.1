@@ -251,7 +251,10 @@ public class CacheData {
                     // 给用户的钩子，忽略
                     configFilterChainManager.doFilter(null, cr);
                     String contentTmp = cr.getContent();
-                    // 触发监听器的receiveConfigInfo方法 如果是普通的Listener，会触发receiveConfigInfo方法，得到一个String，是变更后的配置值。
+                    /**
+                     * 触发监听器的receiveConfigInfo方法 如果是普通的Listener，会触发receiveConfigInfo方法，得到一个String，是变更后的配置值。
+                     * springboot整合nacos AbstractSharedListener#receiveConfigInfo() -> NacosContextRefresher
+                     */
                     listener.receiveConfigInfo(contentTmp);
 
                     // compare lastContent and content

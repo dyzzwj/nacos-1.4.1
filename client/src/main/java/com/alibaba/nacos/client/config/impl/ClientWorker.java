@@ -694,7 +694,9 @@ public class ClientWorker implements Closeable {
                     // 排除failover文件
                     if (!cacheData.isInitializing() || inInitializingCacheList
                             .contains(GroupKey.getKeyTenant(cacheData.dataId, cacheData.group, cacheData.tenant))) {
-                        // 校验md5是否发生变化，如果发生变化通知listener
+                        /**
+                         * 校验md5是否发生变化，如果发生变化通知listener
+                         */
                         cacheData.checkListenerMd5();
                         cacheData.setInitializing(false);
                     }

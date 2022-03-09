@@ -323,7 +323,7 @@ public class NacosNamingService implements NamingService {
         ServiceInfo serviceInfo;
 
         /**
-         * 实际上订阅和直接查询调用的都是GET /nacos/v1/ns/instance/list，区别在于订阅请求中的udpPort参数，带上了客户端的UDP端口号，
+         * 实际上订阅和直接查询调用的都是GET /nacos/v1/ns/instance/list，区别在于订阅请求中的udpPort参数，带上了客户端的UDP端口号， 当查询的服务发生变化时，服务端会通过udp协议推送至客户端
          * 而直接查询请求，UDP端口号是0，这点在下一章服务端的时候会看到
          */
         if (subscribe) {
