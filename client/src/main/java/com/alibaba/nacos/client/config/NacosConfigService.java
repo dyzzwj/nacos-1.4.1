@@ -171,6 +171,7 @@ public class NacosConfigService implements ConfigService {
 
             return content;
         } catch (NacosException ioe) {
+            //鉴权失败
             if (NacosException.NO_RIGHT == ioe.getErrCode()) {
                 throw ioe;
             }

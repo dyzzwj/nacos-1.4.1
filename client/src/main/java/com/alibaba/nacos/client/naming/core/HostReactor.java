@@ -392,7 +392,7 @@ public class HostReactor implements Closeable {
         // 1. 获取老的ServiceInfo
         ServiceInfo oldService = getServiceInfo0(serviceName, clusters);
         try {
-            // 2. GET /nacos/v1/ns/instance/list
+            // 2. GET /nacos/v1/ns/instance/list    pushReceiver.getUdpPort() 携带了udpPort
             String result = serverProxy.queryList(serviceName, clusters, pushReceiver.getUdpPort(), false);
             // 3. 更新注册表
             if (StringUtils.isNotEmpty(result)) {
