@@ -80,6 +80,9 @@ public class ConfigServletInner {
 
         // 判断请求头中是否包含Long-Pulling-Timeout，如果是，则执行长轮询
         if (LongPollingService.isSupportLongPolling(request)) {
+            /**
+             * 为长轮训添加配置监听
+             */
             longPollingService.addLongPollingClient(request, response, clientMd5Map, probeRequestSize);
             return HttpServletResponse.SC_OK + "";
         }
@@ -128,16 +131,16 @@ public class ConfigServletInner {
          *  尝试获取groupKey对应配置读锁
          *
          *  lockResult:
-         *   > 0 ：获取读锁成功
-         *   = 0 ：配置项不存在
-         *   < 0：获取读锁失败，表示有写操作正在发生
+         *   > 0 ：获取读锁成功 200
+         *   = 0 ：配置项不存在 404
+         *   < 0：获取读锁失败，表示有写操作正在发生   409
          *
          */
         int lockResult = tryConfigReadLock(groupKey);
 
         final String requestIp = RequestUtil.getRemoteIp(request);
-        //获取锁成功
         boolean isBeta = false;
+        //获取锁成功
         if (lockResult > 0) {
             FileInputStream fis = null;
             try {
@@ -335,16 +338,19 @@ public class ConfigServletInner {
             lockResult = ConfigCacheService.tryReadLock(groupKey);
 
             // The data is non-existent.
+            //groupkey对应的配置不存在
             if (0 == lockResult) {
                 break;
             }
 
             // Success
+            //获取锁成功
             if (lockResult > 0) {
                 break;
             }
 
             // Retry.
+            //否则 获取锁失败
             if (i > 0) {
                 try {
                     Thread.sleep(1);

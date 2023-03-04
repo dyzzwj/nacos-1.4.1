@@ -55,7 +55,7 @@ import java.util.concurrent.TimeUnit;
  * @author Nacos
  */
 @Service
-public class AsyncNotifyService {
+public class AsyncNotifyService extends Event{
 
     @Autowired
     public AsyncNotifyService(ServerMemberManager memberManager) {

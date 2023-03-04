@@ -117,9 +117,9 @@ public class ConfigController {
      * Adds or updates non-aggregated data.
      *   发布配置
      *   基于非集群derby启动的流程如下
-         * 1、 更新数据库
-         * 2、集群中所有服务端更新本地配置
-         * 3、响应客户端长轮询
+         1、更新数据库（没有改文件系统）
+         2、通知集群中所有配置中心服务端（包括自己）更新本地配置（异步）
+         3、响应客户端长轮询
      *
      *
      * @throws NacosException NacosException.

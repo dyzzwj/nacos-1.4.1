@@ -95,6 +95,7 @@ public class ConfigCacheService {
         final int lockResult = tryWriteLock(groupKey);
         assert (lockResult != 0);
 
+        //如果获取写锁失败，会把当前任务再次添加到任务队列中（重试）
         if (lockResult < 0) {
             DUMP_LOG.warn("[dump-error] write lock failed. {}", groupKey);
             return false;

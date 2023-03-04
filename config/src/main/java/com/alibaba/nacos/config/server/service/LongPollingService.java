@@ -253,7 +253,7 @@ public class LongPollingService {
          * 如果isFixedPolling=true（默认false），则设置为10s，无视客户端设置的超时时间；
          * 否则使用客户端设置的超时时间，默认30s，在这个基础上再减去500ms，防止客户端提前超时。
          */
-        if (isFixedPolling()) {
+        if (isFixedPolling()) { //固定轮训 无视客户端设置的超时时间
             timeout = Math.max(10000, getFixedPollingInterval());
             // Do nothing but set fix polling timeout.
         } else {
@@ -292,7 +292,9 @@ public class LongPollingService {
 
         // AsyncContext.setTimeout() is incorrect, Control by oneself
         asyncContext.setTimeout(0L);
-        // 提交长轮询任务到其他线程  timeout时间之后执行
+        /**
+         * 提交长轮询任务到其他线程  timeout时间之后执行
+         */
         ConfigExecutor.executeLongPolling(
                 new ClientLongPolling(asyncContext, clientMd5Map, ip, probeRequestSize, timeout, appName, tag));
     }

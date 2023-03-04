@@ -443,7 +443,7 @@ public class ClientWorker implements Closeable {
         int longingTaskCount = (int) Math.ceil(listenerSize / ParamUtil.getPerTaskConfigSize());
 
         /**
-         * 一个长轮询任务处理3000个listener，listener监听的是某个dataId的某个group
+         * 一个长轮询任务处理3000个listener，listener监听的是某个group的dataid
          * 每个listener在添加到cacheMap之前会计算所属的taskId
          */
         // 计算longingTaskCount 大于 当前实际长轮询任务数量
@@ -543,7 +543,9 @@ public class ClientWorker implements Closeable {
 
             if (result.ok()) {
                 setHealthServer(true);
-                //parseUpdateDataIdResponse方法会解析服务端返回报文,每行报文代表一个发生配置变化的groupKey。
+                /**
+                 * 解析服务端返回报文,每行报文代表一个发生配置变化的groupKey。
+                 */
                 return parseUpdateDataIdResponse(result.getData());
             } else {
                 setHealthServer(false);
@@ -620,7 +622,9 @@ public class ClientWorker implements Closeable {
         }
 
         /**
-         * 1、处理failover配置：判断当前CacheData是否使用failover配置（ClientWorker.checkLocalConfig），如果使用failover配置，则校验本地配置文件内容是否发生变化，发生变化则触发监听器（CacheData.checkListenerMd5）。这一步其实和长轮询无关。
+         * 1、处理failover配置：判断当前CacheData是否使用failover配置（ClientWorker.checkLocalConfig），
+         *  如果使用failover配置，则校验本地配置文件内容是否发生变化，发生变化则触发监听器（CacheData.checkListenerMd5）。
+         *  这一步其实和长轮询无关。
          * 2、对于所有非failover配置，执行长轮询（ /v1/cs/configs/listener  服务端会hold住请求），返回发生改变的groupKey（ClientWorker.checkUpdateDataIds）。
          * 3、根据返回的groupKey，查询服务端实时配置并保存snapshot（ClientWorker.getServerConfig）
          * 4、更新内存CacheData的配置content。

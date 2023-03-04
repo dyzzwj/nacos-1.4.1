@@ -159,6 +159,7 @@ public class NacosDelayTaskExecuteEngine extends AbstractNacosTaskExecuteEngine<
                 // 处理器处理Task DumpTask ->  DumpProcessor.process
                 //  DistroDelayTask(服务注册 同步到其他节点的) ->  DistroDelayTaskProcessor.process
                 if (!processor.process(task)) {
+                    //如果处理失败（比如为了更新本地文件系统，获取写锁失败），把任务重新添加到队列中（重试）
                     retryFailedTask(taskKey, task);
                 }
             } catch (Throwable e) {
