@@ -148,6 +148,7 @@ public class FailoverReactor implements Closeable {
             try {
 
                 //SwitchRefresher根据cacheDir路径下00-00---000-VIPSRV_FAILOVER_SWITCH-000---00-00文件内容判断是否开启failover，文件内容1表示开启0表示关闭
+                // cacheDir/00-00---000-VIPSRV_FAILOVER_SWITCH-000---00-00
                 File switchFile = new File(failoverDir + UtilAndComs.FAILOVER_SWITCH);
                 if (!switchFile.exists()) {
                     //文件不存在 默认关闭
