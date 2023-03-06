@@ -115,6 +115,7 @@ public class InstancesChangeNotifier extends Subscriber<InstancesChangeEvent> {
     @Override
     public void onEvent(InstancesChangeEvent event) {
         String key = ServiceInfo.getKey(event.getServiceName(), event.getClusters());
+        //获取对该服务感兴趣的监听器  如何添加对某个服务的监听？ NacosNamingService.subscribe(java.lang.String, java.lang.String, java.util.List<java.lang.String>, com.alibaba.nacos.api.naming.listener.EventListener)
         ConcurrentHashSet<EventListener> eventListeners = listenerMap.get(key);
         if (CollectionUtils.isEmpty(eventListeners)) {
             return;

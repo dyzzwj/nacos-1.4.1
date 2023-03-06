@@ -90,6 +90,7 @@ public class BeatReactor implements Closeable {
         }
         dom2Beat.put(key, beatInfo);
         // #2 延迟任务 BeatInfo.period决定了默认客户端心跳间隔，默认间隔为5s，来源于Instance的metadata，key是preserved.heart.beat.interval。
+        //只执行一次 非周期性任务
         executorService.schedule(new BeatTask(beatInfo), beatInfo.getPeriod(), TimeUnit.MILLISECONDS);
         MetricsMonitor.getDom2BeatSizeMonitor().set(dom2Beat.size());
     }

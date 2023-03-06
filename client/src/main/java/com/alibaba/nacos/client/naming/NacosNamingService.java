@@ -215,7 +215,7 @@ public class NacosNamingService implements NamingService {
         NamingUtils.checkInstanceIsLegal(instance);
         // 对于nacos来说，serviceName = groupName + @@ + serviceName
         /**
-         * 关注NamingUtils.getGroupedName方法，这个方法根据分组groupName和应用serviceName生成了Nacos注册中心里实际的serviceName服务名。
+         * 根据分组groupName和应用serviceName生成了Nacos注册中心里实际的serviceName服务名。
          * Nacos服务名=groupName + @@ + serviceName。
          */
         String groupedServiceName = NamingUtils.getGroupedName(serviceName, groupName);

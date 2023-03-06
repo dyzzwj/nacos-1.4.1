@@ -115,6 +115,7 @@ public class HostReactor implements Closeable {
         }
         this.pushEmptyProtection = pushEmptyProtection;
         this.updatingMap = new ConcurrentHashMap<String, Object>();
+        //故障转移
         this.failoverReactor = new FailoverReactor(this, cacheDir);
         //负责处理服务端推送ServiceInfo信息，基于UDP协议
         this.pushReceiver = new PushReceiver(this);
