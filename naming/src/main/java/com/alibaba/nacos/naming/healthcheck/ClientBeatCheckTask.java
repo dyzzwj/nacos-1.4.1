@@ -86,9 +86,9 @@ public class ClientBeatCheckTask implements Runnable {
             }
             // 所有临时实例
             List<Instance> instances = service.allIPs(true);
-            // 超过15s没收到心跳，标记为非健康
             // first set health status of instances:
             for (Instance instance : instances) {
+                // 超过15s没收到心跳，标记为非健康
                 if (System.currentTimeMillis() - instance.getLastBeat() > instance.getInstanceHeartBeatTimeOut()) {
                     if (!instance.isMarked()) {
                         if (instance.isHealthy()) {
@@ -100,6 +100,7 @@ public class ClientBeatCheckTask implements Runnable {
                                             instance.getInstanceHeartBeatTimeOut(), instance.getLastBeat());
                             // UDP推送客户端
                             getPushService().serviceChanged(service);
+                            //发布事件
                             ApplicationUtils.publishEvent(new InstanceHeartbeatTimeoutEvent(this, instance));
                         }
                     }
@@ -117,7 +118,7 @@ public class ClientBeatCheckTask implements Runnable {
                 if (instance.isMarked()) {
                     continue;
                 }
-
+                //超过30s没收到心跳
                 if (System.currentTimeMillis() - instance.getLastBeat() > instance.getIpDeleteTimeout()) {
                     // delete instance
                     Loggers.SRV_LOG.info("[AUTO-DELETE-IP] service: {}, ip: {}", service.getName(),

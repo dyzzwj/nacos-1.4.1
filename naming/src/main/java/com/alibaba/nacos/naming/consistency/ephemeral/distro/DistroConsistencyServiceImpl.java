@@ -112,7 +112,8 @@ public class DistroConsistencyServiceImpl implements EphemeralConsistencyService
         // 写入数据
         onPut(key, value);
         // 将写入数据，同步至所有Member
-        //将写入的数据延迟1s（nacos.naming.distro.taskDispatchPeriod/2=2s/2=1s）推送给集群中所有节点。（这意味着，客户端感知到服务注册表变更后，如果立即向集群中其他节点查询注册表，可能返回不一致数据）
+        //将写入的数据延迟1s（nacos.naming.distro.taskDispatchPeriod/2=2s/2=1s）推送给集群中所有节点。
+        // （这意味着，客户端感知到服务注册表变更后，如果立即向集群中其他节点查询注册表，可能返回不一致数据）
         distroProtocol.sync(new DistroKey(key, KeyBuilder.INSTANCE_LIST_KEY_PREFIX), DataOperation.CHANGE,
                 globalConfig.getTaskDispatchPeriod() / 2);
     }
@@ -390,6 +391,7 @@ public class DistroConsistencyServiceImpl implements EphemeralConsistencyService
                 services.put(datumKey, StringUtils.EMPTY);
             }
             //添加到任务队列
+            //DistroConsistencyServiceImpl.Notifier.run从task中获取任务进行处理
             tasks.offer(Pair.with(datumKey, action));
         }
 
@@ -431,7 +433,9 @@ public class DistroConsistencyServiceImpl implements EphemeralConsistencyService
                     count++;
 
                     try {
-                        //调用listener
+                        /**
+                         * 如果当前Service有新的实例加入，就把这个变更（服务列表发生变化）推送给订阅当前Service的nacos客户端
+                         */
                         if (action == DataOperation.CHANGE) {
                             //Service.onChange
                             listener.onChange(datumKey, dataStore.get(datumKey).value);

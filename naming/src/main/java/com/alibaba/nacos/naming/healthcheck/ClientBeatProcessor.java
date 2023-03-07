@@ -94,6 +94,9 @@ public class ClientBeatProcessor implements Runnable {
                                         UtilsAndCommons.LOCALHOST_SITE);
                         // udp推送客户端
                         getPushService().serviceChanged(service);
+                        /**
+                         * 注意到这里并没有用ConsistencyService更新底层存储的Instance（注意DataStore没有更新）。
+                         */
                     }
                 }
             }

@@ -133,6 +133,7 @@ public class PushService implements ApplicationContextAware, ApplicationListener
 
                 Map<String, Object> cache = new HashMap<>(16);
                 long lastRefTime = System.nanoTime();
+                //遍历pushClient(客户端进行服务发现时进行了订阅操作)
                 for (PushClient client : clients.values()) {
                     if (client.zombie()) {
                         Loggers.PUSH.debug("client is zombie: " + client.toString());

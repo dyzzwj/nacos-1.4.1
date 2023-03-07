@@ -57,7 +57,7 @@ public class DistroVerifyTask implements Runnable {
     }
 
     private void verifyForDataStorage(String type, List<Member> targetServer) {
-        //找自己所负责的服务信息
+        //找自己所负责的服务信息Instance列表的摘要
         DistroData distroData = distroComponentHolder.findDataStorage(type).getVerifyData();
         if (null == distroData) {
             return;
