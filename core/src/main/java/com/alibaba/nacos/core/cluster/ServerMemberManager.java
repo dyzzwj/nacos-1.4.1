@@ -469,7 +469,7 @@ public class ServerMemberManager implements ApplicationListener<WebServerInitial
             if (members.isEmpty()) {
                 return;
             }
-            // 轮询选择
+            // 轮询选择一个nacos节点
             this.cursor = (this.cursor + 1) % members.size();
             Member target = members.get(cursor);
 

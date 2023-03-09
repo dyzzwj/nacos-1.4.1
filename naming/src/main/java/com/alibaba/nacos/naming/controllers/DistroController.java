@@ -82,6 +82,7 @@ public class DistroController {
                 String serviceName = KeyBuilder.getServiceName(entry.getKey());
                 if (!serviceManager.containService(namespaceId, serviceName) && switchDomain
                         .isDefaultInstanceEphemeral()) {
+                    //如果首次注册，才会执行，创建Service，放入ServiceManager管理
                     serviceManager.createEmptyService(namespaceId, serviceName, true);
                 }
                 DistroHttpData distroHttpData = new DistroHttpData(createDistroKey(entry.getKey()), entry.getValue());

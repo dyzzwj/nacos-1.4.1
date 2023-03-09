@@ -32,9 +32,15 @@ import org.springframework.stereotype.Service;
 @DependsOn("ProtocolManager")
 @Service("consistencyDelegate")
 public class DelegateConsistencyServiceImpl implements ConsistencyService {
-    // Raft CP PersistentServiceProcessor
+
+    /**
+     * Raft CP PersistentServiceProcessor
+     */
     private final PersistentConsistencyServiceDelegateImpl persistentConsistencyService;
-    // Distro AP DistroConsistencyServiceImpl
+
+    /**
+     * Distro AP DistroConsistencyServiceImpl
+     */
     private final EphemeralConsistencyService ephemeralConsistencyService;
 
     public DelegateConsistencyServiceImpl(PersistentConsistencyServiceDelegateImpl persistentConsistencyService,

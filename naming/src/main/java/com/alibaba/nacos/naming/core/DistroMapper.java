@@ -135,6 +135,8 @@ public class DistroMapper extends MemberChangeListener {
     }
 
     /**
+     *  MemberInfoReportTask在做健康检查时，如果发现节点有变更 会发布MembersChangeEvent事件
+     *  MemberLookup 发现节点列表变化 也会发布MembersChangeEvent事件
      * 监听MembersChangeEvent事件 把状态为UP或SUSPICIOUS的节点添加healthyList健康节点列表中
      * @param event {@link Event}
      */

@@ -167,7 +167,7 @@ public class NamingProxy {
         headers.put(HttpHeaderConsts.CONTENT_ENCODING, "gzip");
 
         try {
-            //   /v1/ns/distro/datum
+            //   /v1/ns/distro/datum  -> DistroController.onSyncDatum处理该请求
             RestResult<String> result = HttpClient.httpPutLarge(
                     "http://" + curServer + EnvUtil.getContextPath() + UtilsAndCommons.NACOS_NAMING_CONTEXT
                             + DATA_ON_SYNC_URL, headers, data);

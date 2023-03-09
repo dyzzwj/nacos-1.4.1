@@ -516,7 +516,7 @@ public class ServiceManager implements RecordListener<Service> {
             throw new NacosException(NacosException.INVALID_PARAM,
                     "service not found, namespace: " + namespaceId + ", service: " + serviceName);
         }
-        // 2. 把Instance加入Service
+        // 2. 把Instance加入Service 数据同步到其他节点
         addInstance(namespaceId, serviceName, instance.isEphemeral(), instance);
     }
 
@@ -670,6 +670,8 @@ public class ServiceManager implements RecordListener<Service> {
 
             // 写入底层存储
             //DelegateConsistencyServiceImpl.put
+            // Raft CP PersistentServiceProcessor 持久节点
+            // Distro AP DistroConsistencyServiceImpl 临时节点
             consistencyService.put(key, instances);
         }
     }
@@ -903,6 +905,7 @@ public class ServiceManager implements RecordListener<Service> {
         // 2. 开启客户端心跳检测
         service.init();
         // 3. 监听
+        //DelegateConsistencyServiceImpl.listen
         consistencyService
                 .listen(KeyBuilder.buildInstanceListKey(service.getNamespaceId(), service.getName(), true), service);
         consistencyService

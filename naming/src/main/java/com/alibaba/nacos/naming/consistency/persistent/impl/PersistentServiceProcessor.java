@@ -42,9 +42,7 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 /**
- * In clus ter mode, start the Raft protocol.
- *  基于JRaft实现的一致性服务
- * @author <a href="mailto:liaochuntao@live.com">liaochuntao</a>
+ * 基于JRaft实现的一致性服务，之前看配置中心的时候知道，分为写一致和读一致（线性一致）。对于注册中心来说，如果是持久节点会走Raft一致性服务。
  */
 @SuppressWarnings("PMD.ServiceOrDaoClassShouldEndWithImplRule")
 public class PersistentServiceProcessor extends BasePersistentServiceProcessor {

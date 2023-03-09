@@ -671,7 +671,9 @@ public class InstanceController {
         try {
             // udp推送服务新增一个客户端
             if (udpPort > 0 && pushService.canEnablePush(agent)) {
-
+                /**
+                 * pushService监听ServiceChangeEvent事件，当
+                 */
                 pushService
                         .addClient(namespaceId, serviceName, clusters, agent, new InetSocketAddress(clientIP, udpPort),
                                 pushDataSource, tid, app);
