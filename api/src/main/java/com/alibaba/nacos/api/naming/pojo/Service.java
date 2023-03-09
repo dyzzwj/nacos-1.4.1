@@ -41,8 +41,7 @@ public class Service implements Serializable {
     private String name;
 
     /**
-     *      // 服务保护阈值，当大多数服务下线，认为当前注册中心节点发生故障，返回所有实例，包括非健康实例
-     * protect threshold.
+     *  服务保护阈值，当大多数服务下线，认为当前注册中心节点发生故障，返回所有实例，包括非健康实例
      */
     private float protectThreshold = 0.0F;
 

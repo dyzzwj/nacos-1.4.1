@@ -70,15 +70,11 @@ public class Instance implements Serializable {
     private boolean enabled = true;
 
     /**
-     * If instance is ephemeral.
      *  // 是否临时节点
-     * @since 1.0.0
      */
     private boolean ephemeral = true;
 
     /**
-     * cluster information of instance.
-     *
      *  所属集群
      */
     private String clusterName;

@@ -84,6 +84,7 @@ public class FileConfigMemberLookup extends AbstractMemberLookup {
                     .error("nacos-XXXX [serverlist] failed to get serverlist from disk!, error : {}", e.getMessage());
         }
         // 2. 更新内存中的nacos节点列表，发布MembersChangeEvent事件。
+        //DistroMapper监听MembersChangeEvent事件
         afterLookup(tmpMembers);
     }
 }
