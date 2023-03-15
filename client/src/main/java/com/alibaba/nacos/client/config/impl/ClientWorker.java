@@ -358,10 +358,18 @@ public class ClientWorker implements Closeable {
                     ct[1] = ConfigType.TEXT.getType();
                 }
                 return ct;
+
             case HttpURLConnection.HTTP_NOT_FOUND:
+                /**
+                 * 获取读锁返回0，表示配置不存在，返回404
+                 */
                 LocalConfigInfoProcessor.saveSnapshot(agent.getName(), dataId, group, tenant, null);
                 return ct;
+
             case HttpURLConnection.HTTP_CONFLICT: {
+                /**
+                 * 表示没有成功获取读锁，可能正有写操作发生，返回409
+                 */
                 LOGGER.error(
                         "[{}] [sub-server-error] get server config being modified concurrently, dataId={}, group={}, "
                                 + "tenant={}", agent.getName(), dataId, group, tenant);
@@ -533,7 +541,11 @@ public class ClientWorker implements Closeable {
         try {
             // In order to prevent the server from handling the delay of the client's long task,
             // increase the client's read timeout to avoid this problem.
-            // readTimeout = 45s
+            /**
+             *  readTimeout = 45s 配置中心最多hold住请求30s
+             *  1、（可能立即返回（isInitializingCacheList = true 或 dataid对应的配置有变更））
+             *  2、可能最多hold住30s isInitializingCacheList = false 并且dataid数据无变更  md5相等
+             */
             long readTimeoutMs = timeout + (long) Math.round(timeout >> 1);
             //    发请求 /v1/cs/configs/listener
             //   服务端/v1/cs/configs/listener接口负责处理长轮询请求

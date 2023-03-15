@@ -273,6 +273,7 @@ public class ConfigServletInner {
                     out.flush();
                     out.close();
                 } else {
+                    //mysql
                     fis.getChannel()
                             .transferTo(0L, fis.getChannel().size(), Channels.newChannel(response.getOutputStream()));
                 }
@@ -295,7 +296,7 @@ public class ConfigServletInner {
             }
 
             /**
-             * // 获取读锁返回0，表示配置不存在，返回404
+             *  获取读锁返回0，表示配置不存在，返回404
              */
         } else if (lockResult == 0) {
 
@@ -308,11 +309,11 @@ public class ConfigServletInner {
             response.getWriter().println("config data not exist");
             return HttpServletResponse.SC_NOT_FOUND + "";
 
-            /**
-             * // 获取读锁返回-1，表示没有成功获取读锁，可能正有写操作发生，返回409
-             */
-        } else {
 
+        } else {
+            /**
+             *  获取读锁返回-1，表示没有成功获取读锁，可能正有写操作发生，返回409
+             */
             PULL_LOG.info("[client-get] clientIp={}, {}, get data during dump", clientIp, groupKey);
 
             response.setStatus(HttpServletResponse.SC_CONFLICT);

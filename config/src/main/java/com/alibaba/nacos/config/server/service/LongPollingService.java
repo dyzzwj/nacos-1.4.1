@@ -272,7 +272,7 @@ public class LongPollingService {
                         changedGroups.size());
                 return;
             } else if (noHangUpFlag != null && noHangUpFlag.equalsIgnoreCase(TRUE_STR)) {
-                // 如果客户端的本次长轮询请求，请求头包含Long-Pulling-Timeout-No-Hangup，则立即返回200
+                // 如果客户端的本次长轮询请求，请求头包含Long-Pulling-Timeout-No-Hangup，（即本次长轮询包含首次监听的配置项）则立即返回200
                 //如果当时配置项没有发生变化，且请求头中包含Long-Pulling-Timeout-No-Hangup=true，则立即返回。这一步说明本次请求的配置项，包含刚注册监听的配置项。
                 LogUtil.CLIENT_LOG.info("{}|{}|{}|{}|{}|{}|{}", System.currentTimeMillis() - start, "nohangup",
                         RequestUtil.getRemoteIp(req), "polling", clientMd5Map.size(), probeRequestSize,
