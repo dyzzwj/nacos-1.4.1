@@ -107,8 +107,7 @@ public class ServerMemberManager implements ApplicationListener<WebServerInitial
     private String localAddress;
 
     /**
-     * Addressing pattern instances.
-     * // nacos自己如何发现nacos服务
+     * nacos自己如何发现nacos服务
      */
     private MemberLookup lookup;
 
@@ -120,13 +119,12 @@ public class ServerMemberManager implements ApplicationListener<WebServerInitial
 
     /**
      *   // 健康状态的节点地址集合
-     * here is always the node information of the "UP" state.
+     *
      */
     private volatile Set<String> memberAddressInfos = new ConcurrentHashSet<>();
 
     /**
      *   // 集群成员信息广播任务
-     * Broadcast this node element information task.
      */
     private final MemberInfoReportTask infoReportTask = new MemberInfoReportTask();
 
@@ -332,7 +330,10 @@ public class ServerMemberManager implements ApplicationListener<WebServerInitial
             }
         }
         //更新内存中的nacos节点列表
+
+        //所有nacos节点
         serverList = tmpMap;
+        //健康状态的节点地址集合
         memberAddressInfos = tmpAddressInfo;
 
         Collection<Member> finalMembers = allMembers();

@@ -748,13 +748,15 @@ public class InstanceController {
         // 3. 保护模式
         double threshold = service.getProtectThreshold();
 
+        //当存活实例（ipMap.get(Boolean.TRUE).size()）/总实例（srvedIPs.size）<= protectThreshold时，认为注册中心发生故障，
+        // 进入保护模式，返回服务下所有实例
         if ((float) ipMap.get(Boolean.TRUE).size() / srvedIPs.size() <= threshold) {
-
+            //当某个服务下的实例大量下线（Instance.healthy=false）时，会开启保护模式，认为是服务端自己发生了网络分区，将所有实例认为是健康状态返回给客户端
             Loggers.SRV_LOG.warn("protect threshold reached, return all ips, service: {}", serviceName);
             if (isCheck) {
                 result.put("reachProtectThreshold", true);
             }
-
+            //如果处于保护模式  把不健康的节点也返回
             ipMap.get(Boolean.TRUE).addAll(ipMap.get(Boolean.FALSE));
             ipMap.get(Boolean.FALSE).clear();
         }
