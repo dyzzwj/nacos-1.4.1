@@ -327,7 +327,7 @@ public class HostReactor implements Closeable {
             serviceObj = new ServiceInfo(serviceName, clusters);
 
             serviceInfoMap.put(serviceObj.getKey(), serviceObj);
-
+            //添加到updatingMap 表示当前正在从注册中心查询service的信息
             updatingMap.put(serviceName, new Object());
             //向服务端发起查询，并更新注册表
             updateServiceNow(serviceName, clusters);
@@ -478,12 +478,15 @@ public class HostReactor implements Closeable {
                     return;
                 }
 
+                //如果还没更新过
                 if (serviceObj.getLastRefTime() <= lastRefTime) {
                     updateService(serviceName, clusters);
                     serviceObj = serviceInfoMap.get(ServiceInfo.getKey(serviceName, clusters));
                 } else {
                     // if serviceName already updated by push, we should not override it
                     // since the push data may be different from pull through force push
+                    //如果服务端主动推送过该服务的信息 那我们这次就不会再去注册中心上查了
+                    //服务器主动推送该服务的变更信息时 ，会更新serviceObj的lastRefTime
                     refreshOnly(serviceName, clusters);
                 }
 
