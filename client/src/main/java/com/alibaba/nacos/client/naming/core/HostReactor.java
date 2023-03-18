@@ -317,6 +317,7 @@ public class HostReactor implements Closeable {
         String key = ServiceInfo.getKey(serviceName, clusters);
         // 1. 优先判断当前是否处于failover状态---由本地配置文件决定
         if (failoverReactor.isFailoverSwitch()) {
+            //返回本地配置文件的服务信息
             return failoverReactor.getService(key);
         }
         // 2. 内存serviceInfoMap中查询ServiceInfo

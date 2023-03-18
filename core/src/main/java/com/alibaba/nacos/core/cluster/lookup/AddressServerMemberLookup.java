@@ -122,6 +122,7 @@ public class AddressServerMemberLookup extends AbstractMemberLookup {
             throw new NacosException(NacosException.SERVER_ERROR, ex);
         }
 
+        //定时执行
         GlobalExecutor.scheduleByCommon(new AddressServerSyncTask(), 5_000L);
     }
 

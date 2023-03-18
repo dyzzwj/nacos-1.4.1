@@ -473,7 +473,10 @@ public class LongPollingService {
 
             }, timeoutTime, TimeUnit.MILLISECONDS);
 
-            // 2. 将自己加入Queue<ClientLongPolling> allSubs
+            /**
+             *   2、 将自己加入Queue<ClientLongPolling> allSubs
+             *   这个地方主要是记录哪些客户端监听了groupkey 如果有配置变更（配置发布),主动告诉客户端其监听的groupkey配置发送变化，然后客户端主动来拉取对应groupkey的配置
+             */
             allSubs.add(this);
         }
 
