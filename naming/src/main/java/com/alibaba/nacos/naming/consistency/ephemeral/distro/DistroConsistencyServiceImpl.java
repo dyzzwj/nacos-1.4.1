@@ -75,6 +75,9 @@ public class DistroConsistencyServiceImpl implements EphemeralConsistencyService
 
     private final DistroMapper distroMapper;
 
+    /**
+     * 注册中心服务端之间集群同步用的
+     */
     private final DataStore dataStore;
 
     private final Serializer serializer;
@@ -109,7 +112,8 @@ public class DistroConsistencyServiceImpl implements EphemeralConsistencyService
     //临时节点 -AP
     @Override
     public void put(String key, Record value) throws NacosException {
-        // 写入数据
+        // 写入datastore(注册中心服务端之间集群同步用的)
+        //通过UDP将Service变更推送给客户端（异步）
         onPut(key, value);
         // 将写入数据，同步至所有Member
         //将写入的数据延迟1s（nacos.naming.distro.taskDispatchPeriod/2=2s/2=1s）推送给集群中所有节点。
@@ -143,6 +147,7 @@ public class DistroConsistencyServiceImpl implements EphemeralConsistencyService
             datum.value = (Instances) value;
             datum.key = key;
             datum.timestamp.incrementAndGet();
+            //注册中心服务端之间集群同步用的
             dataStore.put(key, datum);
         }
 
@@ -434,7 +439,7 @@ public class DistroConsistencyServiceImpl implements EphemeralConsistencyService
 
                     try {
                         /**
-                         * 如果当前Service有新的实例加入，就把这个变更（服务列表发生变化）推送给订阅当前Service的nacos客户端
+                         * 如果当前Service有新的实例加入，就把这个变更（服务列表发生变化）通过 udp推送给订阅当前Service的nacos客户端
                          */
                         if (action == DataOperation.CHANGE) {
                             //Service.onChange

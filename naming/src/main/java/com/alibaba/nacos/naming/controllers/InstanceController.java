@@ -156,7 +156,7 @@ public class InstanceController {
             Loggers.SRV_LOG.warn("remove instance from non-exist service: {}", serviceName);
             return "ok";
         }
-
+        //服务下架
         serviceManager.removeInstance(namespaceId, serviceName, instance.isEphemeral(), instance);
         return "ok";
     }
@@ -390,6 +390,7 @@ public class InstanceController {
 
         boolean healthyOnly = Boolean.parseBoolean(WebUtils.optional(request, "healthyOnly", "false"));
 
+        //这里
         return doSrvIpxt(namespaceId, serviceName, agent, clusters, clientIP, udpPort, env, isCheck, app, tenant,
                 healthyOnly);
     }
@@ -520,7 +521,9 @@ public class InstanceController {
             clientBeat.setPort(port);
             clientBeat.setCluster(clusterName);
         }
-        // 2. 更新instance健康状态
+        /**
+         * 2. 更新instance健康状态
+         */
         service.processClientBeat(clientBeat);
 
         result.put(CommonParams.CODE, NamingResponseCode.OK);

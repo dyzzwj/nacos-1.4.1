@@ -107,12 +107,12 @@ public class ClientBeatCheckTask implements Runnable {
                 }
             }
 
+            //如果主动下线实例关闭，返回
             if (!getGlobalConfig().isExpireInstance()) {
                 return;
             }
 
-            // 超过30s没收到心跳，直接从注册表中删除 并同步到其他distro节点
-            // then remove obsolete instances:
+            // 超过30s没收到心跳，直接从注册表中删除 并通知 udp 客户端，同步到其他distro节点
             for (Instance instance : instances) {
 
                 if (instance.isMarked()) {

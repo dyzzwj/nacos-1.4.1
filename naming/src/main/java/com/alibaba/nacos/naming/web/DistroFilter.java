@@ -66,6 +66,9 @@ public class DistroFilter implements Filter {
     @Autowired
     private DistroMapper distroMapper;
 
+    /**
+     * 根据请求路径、请求方法、请求参数，找到RequestMapping注解的方法返回给DistroFilter。
+     */
     @Autowired
     private ControllerMethodsCache controllerMethodsCache;
 
@@ -158,7 +161,7 @@ public class DistroFilter implements Filter {
                             + urlString);
                 }
             } else {
-                // 当前节点负责groupedServiceName，直接处理
+                // 当前节点负责groupedServiceName，直接放行
                 OverrideParameterRequestWrapper requestWrapper = OverrideParameterRequestWrapper.buildRequest(req);
                 requestWrapper.addParameter(CommonParams.SERVICE_NAME, groupedServiceName);
                 filterChain.doFilter(requestWrapper, resp);

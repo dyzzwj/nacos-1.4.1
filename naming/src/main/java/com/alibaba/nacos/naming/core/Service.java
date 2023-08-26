@@ -199,7 +199,9 @@ public class Service extends com.alibaba.nacos.api.naming.pojo.Service implement
             }
         }
 
-        //更新
+        /**
+         * 更新 UDP将Service变更推送给客户端
+         */
         updateIPs(value.getInstanceList(), KeyBuilder.matchEphemeralInstanceListKey(key));
 
         recalculateChecksum();

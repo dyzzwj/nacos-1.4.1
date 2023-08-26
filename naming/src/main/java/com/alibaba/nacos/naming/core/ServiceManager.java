@@ -658,7 +658,7 @@ public class ServiceManager implements RecordListener<Service> {
         Service service = getService(namespaceId, serviceName);
 
         synchronized (service) {
-            // 从底层存储获取当前Instance列表，将新加入的Instance加入并返回
+            // 从底层存储获取当前Instance列表，将新加入的Instance加入内存注册表并返回
             List<Instance> instanceList = addIpAddresses(service, ephemeral, ips);
 
             Instances instances = new Instances();
@@ -687,9 +687,11 @@ public class ServiceManager implements RecordListener<Service> {
      */
     public void removeInstance(String namespaceId, String serviceName, boolean ephemeral, Instance... ips)
             throws NacosException {
+        //获取服务
         Service service = getService(namespaceId, serviceName);
 
         synchronized (service) {
+            //移除实例
             removeInstance(namespaceId, serviceName, ephemeral, service, ips);
         }
     }
@@ -699,11 +701,14 @@ public class ServiceManager implements RecordListener<Service> {
 
         String key = KeyBuilder.buildInstanceListKey(namespaceId, serviceName, ephemeral);
 
+        //从注册表中删除，返回删除后的实例列表
         List<Instance> instanceList = substractIpAddresses(service, ephemeral, ips);
 
         Instances instances = new Instances();
+        //删除实例后实例列表
         instances.setInstanceList(instanceList);
 
+        // 通知udp客户端、集群同步
         consistencyService.put(key, instances);
     }
 
@@ -818,6 +823,7 @@ public class ServiceManager implements RecordListener<Service> {
         for (Instance instance : ips) {
             if (!service.getClusterMap().containsKey(instance.getClusterName())) {
                 Cluster cluster = new Cluster(instance.getClusterName(), service);
+                //创建集群
                 cluster.init();
                 service.getClusterMap().put(instance.getClusterName(), cluster);
                 Loggers.SRV_LOG
@@ -834,6 +840,7 @@ public class ServiceManager implements RecordListener<Service> {
                 } else {
                     instance.setInstanceId(instance.generateInstanceId(currentInstanceIds));
                 }
+                //放入注册表
                 instanceMap.put(instance.getDatumKey(), instance);
             }
 
